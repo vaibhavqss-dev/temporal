@@ -280,7 +280,7 @@ func (c *clientImpl) WaitForYellowStatus(ctx context.Context, index string) (str
 func (c *clientImpl) GetMapping(ctx context.Context, index string) (map[string]string, error) {
 	// Manually build mapping request because olivere/elastic/v7 client doesn't work with ES8
 	path, err := uritemplates.Expand("/{index}/_mapping", map[string]string{
-		"index": index,
+	  	"index": index,
 	})
 	if err != nil {
 		return nil, err
@@ -289,7 +289,7 @@ func (c *clientImpl) GetMapping(ctx context.Context, index string) (map[string]s
 	// Get HTTP response
 	res, err := c.esClient.PerformRequest(ctx, elastic.PerformRequestOptions{
 		Method:  "GET",
-		Path:    path,
+		Path:    path, 
 		Params:  url.Values{},
 		Headers: http.Header{},
 	})
