@@ -14,7 +14,6 @@ import (
 	"github.com/olivere/elastic/v7"
 	"github.com/olivere/elastic/v7/uritemplates"
 	enumspb "go.temporal.io/api/enums/v1"
-	"go.temporal.io/server/common/auth"
 	"go.temporal.io/server/common/log"
 )
 
@@ -27,14 +26,6 @@ type (
 		initIsPointInTimeSupported sync.Once
 		isPointInTimeSupported     bool
 	}
-)
-
-const (
-	pointInTimeSupportedFlavor = "default" // the other flavor is "oss"
-)
-
-var (
-	pointInTimeSupportedIn = semver.MustParseRange(">=7.10.0")
 )
 
 var _ Client = (*clientImpl)(nil)
@@ -113,19 +104,6 @@ func newClient(cfg *Config, httpClient *http.Client, logger log.Logger) (*client
 		esClient: client,
 		url:      cfg.URL,
 	}, nil
-}
-
-// Build Http Client with TLS
-func buildTLSHTTPClient(config *auth.TLS) (*http.Client, error) {
-	tlsConfig, err := auth.NewTLSConfig(config)
-	if err != nil {
-		return nil, err
-	}
-
-	transport := &http.Transport{TLSClientConfig: tlsConfig}
-	tlsClient := &http.Client{Transport: transport}
-
-	return tlsClient, nil
 }
 
 func (c *clientImpl) Get(ctx context.Context, index string, docID string) (*elastic.GetResult, error) {
@@ -280,7 +258,7 @@ func (c *clientImpl) WaitForYellowStatus(ctx context.Context, index string) (str
 func (c *clientImpl) GetMapping(ctx context.Context, index string) (map[string]string, error) {
 	// Manually build mapping request because olivere/elastic/v7 client doesn't work with ES8
 	path, err := uritemplates.Expand("/{index}/_mapping", map[string]string{
-	  	"index": index,
+		"index": index,
 	})
 	if err != nil {
 		return nil, err
@@ -289,7 +267,7 @@ func (c *clientImpl) GetMapping(ctx context.Context, index string) (map[string]s
 	// Get HTTP response
 	res, err := c.esClient.PerformRequest(ctx, elastic.PerformRequestOptions{
 		Method:  "GET",
-		Path:    path, 
+		Path:    path,
 		Params:  url.Values{},
 		Headers: http.Header{},
 	})

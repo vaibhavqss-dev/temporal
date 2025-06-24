@@ -66,4 +66,14 @@ type (
 		ScrollID    string
 		PointInTime *elastic.PointInTime
 	}
+
+	SearchParametersNew struct {
+		Index       string
+		Query       map[string]interface{}
+		PageSize    int
+		Sorter      []map[string]interface{}
+		SearchAfter []interface{}
+		ScrollID    string
+		PointInTime map[string]interface{}
+	}
 )
