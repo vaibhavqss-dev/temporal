@@ -2,6 +2,7 @@ package client
 
 import (
 	"bytes"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -25,6 +26,15 @@ type (
 		url                        url.URL
 		initIsPointInTimeSupported sync.Once
 		isPointInTimeSupported     bool
+		Healthcheck                Healthcheck
+	}
+
+	Healthcheck struct {
+		healthcheckEnabled        bool
+		healthcheckTimeoutStartup time.Duration
+		healthcheckTimeout        time.Duration
+		healthcheckInterval       time.Duration
+		healthcheckStopChan       chan bool
 	}
 )
 
@@ -62,11 +72,14 @@ func NewESClient(cfg *Config, httpClient *http.Client, logger log.Logger) (*ESCl
 	}
 
 	esCfg := elasticsearch.Config{
-		Addresses:           urls,
-		Username:            cfg.Username,
-		Password:            cfg.Password,
-		CompressRequestBody: true,
-		Transport:           httpClient.Transport,
+		Addresses:                urls,
+		Username:                 cfg.Username,
+		Password:                 cfg.Password,
+		CompressRequestBody:      true,
+		CompressRequestBodyLevel: gzip.DefaultCompression,
+		Transport:                httpClient.Transport,
+		EnableDebugLogger:        true,
+		EnableMetrics:            true,	
 	}
 
 	if cfg.CloseIdleConnectionsInterval != time.Duration(0) {
@@ -388,12 +401,15 @@ func (c *ESClient) GetDateFieldType() string {
 
 // TODO: IMPLEMENT
 func (c *ESClient) Bulk() BulkService {
+	// return newBulkService(c.ESClient.Bulk())
 	return nil
 }
 
 // TODO: IMPLEMENT BULK PROCESSOR
 func (c *ESClient) RunBulkProcessor(ctx context.Context, p *BulkProcessorParameters) (BulkProcessor, error) {
-	return nil, nil
+	// req := c.ESClient.Bulk
+	
+	return newBulkProcessor_n(&c.ESClient.Bulk), nil
 }
 
 func (c *ESClient) Delete(ctx context.Context, index string, docID string, version int64) error {

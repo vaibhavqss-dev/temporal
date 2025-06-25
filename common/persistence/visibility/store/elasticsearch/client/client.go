@@ -67,6 +67,7 @@ type (
 		PointInTime *elastic.PointInTime
 	}
 
+	// NEW ESCLIENT
 	SearchParametersNew struct {
 		Index       string
 		Query       map[string]interface{}
