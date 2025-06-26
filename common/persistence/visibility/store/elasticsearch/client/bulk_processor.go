@@ -3,6 +3,8 @@
 package client
 
 import (
+	"context"
+	"io"
 	"time"
 
 	"github.com/olivere/elastic/v7"
@@ -38,5 +40,31 @@ type (
 		ID          string
 		Version     int64
 		Doc         map[string]interface{}
+	}
+)
+
+// NewClient
+type (
+	BulkIndexer interface {
+		Add(context.Context, *BulkIndexerRequest) error
+		Close(context.Context) error
+	}
+
+	BulkIndexerParameters struct {
+		Name          string
+		NumOfWorkers  int
+		BulkActions   int
+		BulkSize      int
+		FlushInterval time.Duration
+		OnFlushStart  func(context.Context) context.Context
+		OnFlushEnd    func(context.Context)
+	}
+
+	BulkIndexerRequest struct {
+		RequestType BulkableRequestType
+		Index       string
+		ID          string
+		Version     *int64
+		Doc         io.ReadSeeker
 	}
 )

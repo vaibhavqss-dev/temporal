@@ -15,6 +15,7 @@ import (
 	"github.com/blang/semver/v4"
 	"github.com/elastic/go-elasticsearch/v9"
 	"github.com/elastic/go-elasticsearch/v9/esapi"
+	"github.com/elastic/go-elasticsearch/v9/esutil"
 	enumspb "go.temporal.io/api/enums/v1"
 	"go.temporal.io/server/common/auth"
 	"go.temporal.io/server/common/log"
@@ -79,7 +80,9 @@ func NewESClient(cfg *Config, httpClient *http.Client, logger log.Logger) (*ESCl
 		CompressRequestBodyLevel: gzip.DefaultCompression,
 		Transport:                httpClient.Transport,
 		EnableDebugLogger:        true,
-		EnableMetrics:            true,	
+		EnableMetrics:            true,
+		// RetryBackoff:             func(i int) time.Duration { return time.Duration(i) * 100 * time.Millisecond },
+		// MaxRetries:               5,
 	}
 
 	if cfg.CloseIdleConnectionsInterval != time.Duration(0) {
@@ -400,16 +403,18 @@ func (c *ESClient) GetDateFieldType() string {
 }
 
 // TODO: IMPLEMENT
-func (c *ESClient) Bulk() BulkService {
-	// return newBulkService(c.ESClient.Bulk())
+func (c *ESClient) Bulk() BulkService_n {
+	// return newBulkService_n(c.ESClient)
 	return nil
 }
 
 // TODO: IMPLEMENT BULK PROCESSOR
-func (c *ESClient) RunBulkProcessor(ctx context.Context, p *BulkProcessorParameters) (BulkProcessor, error) {
-	// req := c.ESClient.Bulk
-	
-	return newBulkProcessor_n(&c.ESClient.Bulk), nil
+func (c *ESClient) RunBulkProcessor(ctx context.Context, p *BulkIndexerParameters) (BulkIndexer, error) {
+	return newBulkProcessor_n(esutil.BulkIndexerConfig{
+		Client:        c.ESClient,
+		NumWorkers:    p.NumOfWorkers,
+		FlushInterval: p.FlushInterval,
+	})
 }
 
 func (c *ESClient) Delete(ctx context.Context, index string, docID string, version int64) error {

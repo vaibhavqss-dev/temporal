@@ -1,67 +1,53 @@
 package client
 
 import (
-	// "errors"
-	// "time"
+	"context"
 
-	"github.com/elastic/go-elasticsearch/v9/esapi"
+	"github.com/elastic/go-elasticsearch/v9/esutil"
 )
 
 type (
-	bulkProcessorImpl_N struct {
-		esBulkProcessor *esapi.Bulk
+	bulkIndexerImpl struct {
+		es esutil.BulkIndexer
 	}
 )
 
-func newBulkProcessor_n(esBulkProcessor *esapi.Bulk) *bulkProcessorImpl_N {
-	if esBulkProcessor == nil {
-		return nil
+func newBulkProcessor_n(cfg esutil.BulkIndexerConfig) (*bulkIndexerImpl, error) {
+	indexer, err := esutil.NewBulkIndexer(cfg)
+	if err != nil {
+		return nil, err
 	}
-	return &bulkProcessorImpl_N{
-		esBulkProcessor: esBulkProcessor,
-	}
+	return &bulkIndexerImpl{
+		es: indexer,
+	}, nil
 }
 
-func (p *bulkProcessorImpl_N) Stop() error {
-	// Flush can block indefinitely if we can't reach ES. Call it with a timeout to avoid
-	// blocking server shutdown. Default fx app shutdown timeout is 15s, so use 5s.
-	// errC := make(chan error)
-	// go func() {
-	// 	errF := p.esBulkProcessor.Flush()
-	// 	errS := p.esBulkProcessor.Stop()
-	// 	if errF != nil {
-	// 		errC <- errF
-	// 	} else {
-	// 		errC <- errS
-	// 	}
-	// }()
-	// timer := time.NewTimer(5 * time.Second)
-	// defer timer.Stop()
-	// select {
-	// case err := <-errC:
-	// 	return err
-	// case <-timer.C:
-	// 	return errors.New("esBulkProcessor Flush/Stop timed out")
-	// }
+func (b *bulkIndexerImpl) Add(ctx context.Context, request *BulkIndexerRequest) error {
+	switch request.RequestType {
+	case BulkableRequestTypeIndex:
+		bulkIndexRequest := esutil.BulkIndexerItem{
+			Index:       request.Index,
+			Action:      "index",
+			DocumentID:  request.ID,
+			Version:     request.Version,
+			VersionType: versionTypeExternal,
+			Body:        request.Doc,
+		}
+		return b.es.Add(ctx, bulkIndexRequest)
+
+	case BulkableRequestTypeDelete:
+		bulkDeleteRequest := esutil.BulkIndexerItem{
+			Index:       request.Index,
+			Action:      "delete",
+			DocumentID:  request.ID,
+			Version:     request.Version,
+			VersionType: versionTypeExternal,
+		}
+		return b.es.Add(ctx, bulkDeleteRequest)
+	}
 	return nil
 }
 
-func (p *bulkProcessorImpl_N) Add(request *BulkableRequest) {
-	switch request.RequestType {
-	// case BulkableRequestTypeIndex:
-	// 	bulkIndexRequest := elastic.NewBulkIndexRequest().
-	// 		Index(request.Index).
-	// 		Id(request.ID).
-	// 		VersionType(versionTypeExternal).
-	// 		Version(request.Version).
-	// 		Doc(request.Doc)
-	// 	p.esBulkProcessor.Add(bulkIndexRequest)
-	// case BulkableRequestTypeDelete:
-	// 	bulkDeleteRequest := elastic.NewBulkDeleteRequest().
-	// 		Index(request.Index).
-	// 		Id(request.ID).
-	// 		VersionType(versionTypeExternal).
-	// 		Version(request.Version)
-	// 	p.esBulkProcessor.Add(bulkDeleteRequest)
-	}
+func (b *bulkIndexerImpl) Close(ctx context.Context) error {
+	return b.es.Close(ctx)
 }
