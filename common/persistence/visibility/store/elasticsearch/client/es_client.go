@@ -40,7 +40,8 @@ type (
 )
 
 const (
-	pointInTimeSupportedFlavor = "default" // the other flavor is "oss"
+	pointInTimeSupportedFlavor   = "default" // the other flavor is "oss"
+	DefaultDiscoverNodesInterval = 15 * time.Minute
 )
 
 var (
@@ -81,8 +82,11 @@ func NewESClient(cfg *Config, httpClient *http.Client, logger log.Logger) (*ESCl
 		Transport:                httpClient.Transport,
 		EnableDebugLogger:        true,
 		EnableMetrics:            true,
+		DiscoverNodesOnStart:     cfg.EnableSniff,
+		DiscoverNodesInterval:    DefaultDiscoverNodesInterval,
 		// RetryBackoff:             func(i int) time.Duration { return time.Duration(i) * 100 * time.Millisecond },
 		// MaxRetries:               5,
+		// RetryOnStatus:            []int{429, 502, 503, 504},
 	}
 
 	if cfg.CloseIdleConnectionsInterval != time.Duration(0) {
@@ -408,12 +412,14 @@ func (c *ESClient) Bulk() BulkService_n {
 	return nil
 }
 
-// TODO: IMPLEMENT BULK PROCESSOR
 func (c *ESClient) RunBulkProcessor(ctx context.Context, p *BulkIndexerParameters) (BulkIndexer, error) {
-	return newBulkProcessor_n(esutil.BulkIndexerConfig{
+	return newBulkProcessor_n(ctx, esutil.BulkIndexerConfig{
 		Client:        c.ESClient,
 		NumWorkers:    p.NumOfWorkers,
 		FlushInterval: p.FlushInterval,
+		OnFlushStart:  p.BeforeFunc,
+		OnFlushEnd:    p.AfterFunc,
+		FlushBytes:    p.BulkSize,
 	})
 }
 
@@ -441,7 +447,6 @@ func (c *ESClient) DeleteIndex(ctx context.Context, indexName string) (bool, err
 	req := esapi.IndicesDeleteRequest{
 		Index: []string{indexName},
 	}
-
 	res, err := req.Do(ctx, c.ESClient)
 	if err != nil {
 		return false, err

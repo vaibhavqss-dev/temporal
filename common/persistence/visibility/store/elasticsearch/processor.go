@@ -38,7 +38,7 @@ type (
 	processorImpl struct {
 		status                  int32
 		bulkProcessor           client.BulkProcessor
-		bulkProcessorParameters *client.BulkProcessorParameters
+		bulkProcessorParameters *client.BulkIndexerParameters
 		client                  client.Client
 		mapToAckFuture          collection.ConcurrentTxMap // used to map ES request to ack channel
 		logger                  log.Logger
@@ -91,7 +91,7 @@ func NewProcessor(
 		logger:             log.With(logger, tag.ComponentIndexerESProcessor),
 		metricsHandler:     metricsHandler.WithTags(metrics.OperationTag(metrics.ElasticsearchBulkProcessor)),
 		indexerConcurrency: uint32(cfg.IndexerConcurrency()),
-		bulkProcessorParameters: &client.BulkProcessorParameters{
+		bulkProcessorParameters: &client.BulkIndexerParameters{
 			Name:          visibilityProcessorName,
 			NumOfWorkers:  cfg.ESProcessorNumOfWorkers(),
 			BulkActions:   cfg.ESProcessorBulkActions(),
@@ -99,8 +99,8 @@ func NewProcessor(
 			FlushInterval: cfg.ESProcessorFlushInterval(),
 		},
 	}
-	p.bulkProcessorParameters.AfterFunc = p.bulkAfterAction
-	p.bulkProcessorParameters.BeforeFunc = p.bulkBeforeAction
+	// p.bulkProcessorParameters.AfterFunc = p.bulkAfterAction
+	// p.bulkProcessorParameters.BeforeFunc = p.bulkBeforeAction
 	return p
 }
 
@@ -152,7 +152,7 @@ func (p *processorImpl) hashFn(key interface{}) uint32 {
 }
 
 // Add request to the bulk and return a future object which will receive ack signal when the request is processed.
-func (p *processorImpl) Add(request *client.BulkableRequest, visibilityTaskKey string) *future.FutureImpl[bool] {
+func (p *processorImpl) Add(request *client.BulkIndexerRequest, visibilityTaskKey string) *future.FutureImpl[bool] {
 	newFuture := newAckFuture() // Create future first to measure the impact of following RWLock on latency.
 
 	p.shutdownLock.RLock()

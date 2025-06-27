@@ -46,8 +46,8 @@ type (
 // NewClient
 type (
 	BulkIndexer interface {
-		Add(context.Context, *BulkIndexerRequest) error
-		Close(context.Context) error
+		Add(*BulkIndexerRequest) error
+		Close() error
 	}
 
 	BulkIndexerParameters struct {
@@ -56,8 +56,8 @@ type (
 		BulkActions   int
 		BulkSize      int
 		FlushInterval time.Duration
-		OnFlushStart  func(context.Context) context.Context
-		OnFlushEnd    func(context.Context)
+		BeforeFunc    func(context.Context) context.Context
+		AfterFunc     func(context.Context)
 	}
 
 	BulkIndexerRequest struct {

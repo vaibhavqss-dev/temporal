@@ -2,27 +2,30 @@ package client
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/elastic/go-elasticsearch/v9/esutil"
 )
 
 type (
 	bulkIndexerImpl struct {
-		es esutil.BulkIndexer
+		ctx context.Context
+		es  esutil.BulkIndexer
 	}
 )
 
-func newBulkProcessor_n(cfg esutil.BulkIndexerConfig) (*bulkIndexerImpl, error) {
+func newBulkProcessor_n(ctx context.Context, cfg esutil.BulkIndexerConfig) (*bulkIndexerImpl, error) {
 	indexer, err := esutil.NewBulkIndexer(cfg)
 	if err != nil {
 		return nil, err
 	}
 	return &bulkIndexerImpl{
-		es: indexer,
+		ctx: ctx,
+		es:  indexer,
 	}, nil
 }
 
-func (b *bulkIndexerImpl) Add(ctx context.Context, request *BulkIndexerRequest) error {
+func (b *bulkIndexerImpl) Add(request *BulkIndexerRequest) error {
 	switch request.RequestType {
 	case BulkableRequestTypeIndex:
 		bulkIndexRequest := esutil.BulkIndexerItem{
@@ -33,7 +36,7 @@ func (b *bulkIndexerImpl) Add(ctx context.Context, request *BulkIndexerRequest) 
 			VersionType: versionTypeExternal,
 			Body:        request.Doc,
 		}
-		return b.es.Add(ctx, bulkIndexRequest)
+		return b.es.Add(b.ctx, bulkIndexRequest)
 
 	case BulkableRequestTypeDelete:
 		bulkDeleteRequest := esutil.BulkIndexerItem{
@@ -43,11 +46,12 @@ func (b *bulkIndexerImpl) Add(ctx context.Context, request *BulkIndexerRequest) 
 			Version:     request.Version,
 			VersionType: versionTypeExternal,
 		}
-		return b.es.Add(ctx, bulkDeleteRequest)
+		return b.es.Add(b.ctx, bulkDeleteRequest)
+	default:
+		return fmt.Errorf("unsupported request type: %v", request.RequestType)
 	}
-	return nil
 }
 
-func (b *bulkIndexerImpl) Close(ctx context.Context) error {
-	return b.es.Close(ctx)
+func (b *bulkIndexerImpl) Close() error {
+	return b.es.Close(b.ctx)
 }

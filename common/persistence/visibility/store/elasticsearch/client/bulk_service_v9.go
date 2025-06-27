@@ -15,7 +15,7 @@ type (
 		client *elasticsearch.Client
 		buf    []string
 		mu     sync.Mutex
-	}
+	} 
 )
 
 func newBulkService_n(client *elasticsearch.Client) *bulkServiceImpl_n {
