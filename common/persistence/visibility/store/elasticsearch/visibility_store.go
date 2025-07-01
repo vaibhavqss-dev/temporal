@@ -13,6 +13,8 @@ import (
 	"strings"
 	"time"
 
+	"github.com/elastic/go-elasticsearch/v9/typedapi/core/search"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/types"
 	"github.com/olivere/elastic/v7"
 	commonpb "go.temporal.io/api/common/v1"
 	enumspb "go.temporal.io/api/enums/v1"
@@ -390,7 +392,7 @@ func (s *VisibilityStore) scanWorkflowExecutionsWithScroll(
 	request *manager.ListWorkflowExecutionsRequestV2,
 ) (*store.InternalListWorkflowExecutionsResponse, error) {
 	var (
-		searchResult *client.SearchResult
+		searchResult *search.Response
 		scrollErr    error
 	)
 
@@ -412,9 +414,9 @@ func (s *VisibilityStore) scanWorkflowExecutionsWithScroll(
 	}
 
 	// Both io.IOF and empty hits list indicate that this is a last page.
-	if (searchResult.Hits != nil && len(searchResult.Hits.Hits) < request.PageSize) ||
+	if (searchResult.Hits.Hits != nil && len(searchResult.Hits.Hits) < request.PageSize) ||
 		scrollErr == io.EOF {
-		err := s.esClient.CloseScroll(ctx, searchResult.ScrollId)
+		err := s.esClient.CloseScroll(ctx, *searchResult.ScrollId_)
 		if err != nil {
 			return nil, ConvertElasticsearchClientError("Unable to close scroll", err)
 		}
@@ -438,7 +440,11 @@ func (s *VisibilityStore) scanWorkflowExecutionsWithPit(
 		if err != nil {
 			return nil, ConvertElasticsearchClientError("Unable to create point in time", err)
 		}
-		p.PointInTime = elastic.NewPointInTimeWithKeepAlive(pitID, pointInTimeKeepAliveInterval)
+		// p.PointInTime = elastic.NewPointInTimeWithKeepAlive(pitID, pointInTimeKeepAliveInterval)
+		p.PointInTime = &types.PointInTimeReference{
+			Id:        pitID,
+			KeepAlive: pointInTimeKeepAliveInterval,
+		}
 	} else if p.PointInTime == nil {
 		return nil, serviceerror.NewInvalidArgument("pointInTimeId must present in pagination token")
 	}
@@ -449,8 +455,8 @@ func (s *VisibilityStore) scanWorkflowExecutionsWithPit(
 	}
 
 	// Number hits smaller than the page size indicates that this is the last page.
-	if searchResult.Hits != nil && len(searchResult.Hits.Hits) < request.PageSize {
-		_, err := s.esClient.ClosePointInTime(ctx, searchResult.PitId)
+	if searchResult.Hits.Hits != nil && len(searchResult.Hits.Hits) < request.PageSize {
+		_, err := s.esClient.ClosePointInTime(ctx, *searchResult.PitId)
 		if err != nil {
 			return nil, ConvertElasticsearchClientError("Unable to close point in time", err)
 		}

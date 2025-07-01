@@ -16,6 +16,8 @@ import (
 	"github.com/elastic/go-elasticsearch/v9"
 	"github.com/elastic/go-elasticsearch/v9/esapi"
 	"github.com/elastic/go-elasticsearch/v9/esutil"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/core/search"
+	"github.com/elastic/go-elasticsearch/v9/typedapi/types"
 	enumspb "go.temporal.io/api/enums/v1"
 	"go.temporal.io/server/common/auth"
 	"go.temporal.io/server/common/log"
@@ -48,7 +50,7 @@ var (
 	pointInTimeSupportedIn = semver.MustParseRange(">=7.10.0")
 )
 
-var _ Client = (*ESClient)(nil)
+var _ NewEsClient = (*ESClient)(nil)
 
 func NewESClient(cfg *Config, httpClient *http.Client, logger log.Logger) (*ESClient, error) {
 	var urls []string
@@ -77,16 +79,20 @@ func NewESClient(cfg *Config, httpClient *http.Client, logger log.Logger) (*ESCl
 		Addresses:                urls,
 		Username:                 cfg.Username,
 		Password:                 cfg.Password,
+		Header:                   http.Header{},
 		CompressRequestBody:      true,
 		CompressRequestBodyLevel: gzip.DefaultCompression,
 		Transport:                httpClient.Transport,
 		EnableDebugLogger:        true,
 		EnableMetrics:            true,
-		DiscoverNodesOnStart:     cfg.EnableSniff,
-		DiscoverNodesInterval:    DefaultDiscoverNodesInterval,
 		// RetryBackoff:             func(i int) time.Duration { return time.Duration(i) * 100 * time.Millisecond },
 		// MaxRetries:               5,
 		// RetryOnStatus:            []int{429, 502, 503, 504},
+	}
+
+	if cfg.EnableSniff {
+		esCfg.DiscoverNodesOnStart = true
+		esCfg.DiscoverNodesInterval = 60 * time.Second
 	}
 
 	if cfg.CloseIdleConnectionsInterval != time.Duration(0) {
@@ -107,6 +113,8 @@ func NewESClient(cfg *Config, httpClient *http.Client, logger log.Logger) (*ESCl
 		return nil, err
 	}
 
+	// TODO: HealthCheck
+
 	return &ESClient{
 		ESClient: client,
 		url:      cfg.URL,
@@ -126,7 +134,7 @@ func buildTLSHTTPClient(config *auth.TLS) (*http.Client, error) {
 	return tlsClient, nil
 }
 
-func (c *ESClient) Get(ctx context.Context, index string, docID string) (*GetResult, error) {
+func (c *ESClient) Get(ctx context.Context, index string, docID string) (*types.GetResult, error) {
 	req := esapi.GetRequest{
 		Index:      index,
 		DocumentID: docID,
@@ -139,14 +147,14 @@ func (c *ESClient) Get(ctx context.Context, index string, docID string) (*GetRes
 		return nil, fmt.Errorf("error getting document %s: %s", docID, res.String())
 	}
 
-	var getResult GetResult
+	var getResult types.GetResult
 	if err := json.NewDecoder(res.Body).Decode(&getResult); err != nil {
 		return nil, fmt.Errorf("error decoding response body: %w", err)
 	}
 	return &getResult, nil
 }
 
-func (c *ESClient) Search(ctx context.Context, p *SearchParametersNew) (*SearchResult, error) {
+func (c *ESClient) Search(ctx context.Context, p *NewEsSearchParameters) (*search.Response, error) {
 	query := map[string]interface{}{
 		"query":            p.Query,
 		"sort":             p.Sorter,
@@ -192,7 +200,7 @@ func (c *ESClient) Search(ctx context.Context, p *SearchParametersNew) (*SearchR
 		return nil, fmt.Errorf("ES search error: %s", res.String())
 	}
 
-	var result SearchResult
+	var result search.Response
 	if err := json.NewDecoder(res.Body).Decode(&result); err != nil {
 		return nil, fmt.Errorf("error decoding search response: %w", err)
 	}
@@ -200,7 +208,7 @@ func (c *ESClient) Search(ctx context.Context, p *SearchParametersNew) (*SearchR
 }
 
 // FIX: keepAliveInterval
-func (c *ESClient) OpenScroll(ctx context.Context, p *SearchParametersNew, keepAliveInterval time.Duration) (*SearchResult, error) {
+func (c *ESClient) OpenScroll(ctx context.Context, p *NewEsSearchParameters, keepAliveInterval time.Duration) (*search.Response, error) {
 	query := map[string]interface{}{
 		"query": p.Query,
 		"sort":  p.Sorter,
@@ -230,7 +238,7 @@ func (c *ESClient) OpenScroll(ctx context.Context, p *SearchParametersNew, keepA
 		return nil, fmt.Errorf("scroll search error: %s", res.String())
 	}
 
-	var result SearchResult
+	var result search.Response
 	if err := json.NewDecoder(res.Body).Decode(&result); err != nil {
 		return nil, fmt.Errorf("error decoding scroll response: %w", err)
 	}
@@ -238,7 +246,7 @@ func (c *ESClient) OpenScroll(ctx context.Context, p *SearchParametersNew, keepA
 	return &result, nil
 }
 
-func (c *ESClient) Scroll(ctx context.Context, scrollID string, keepAliveInterval time.Duration) (*SearchResult, error) {
+func (c *ESClient) Scroll(ctx context.Context, scrollID string, keepAliveInterval time.Duration) (*search.Response, error) {
 	req := esapi.ScrollRequest{
 		ScrollID: scrollID,
 		Scroll:   keepAliveInterval,
@@ -253,7 +261,7 @@ func (c *ESClient) Scroll(ctx context.Context, scrollID string, keepAliveInterva
 		return nil, fmt.Errorf("scroll error: %s", res.String())
 	}
 
-	var result SearchResult
+	var result search.Response
 	if err := json.NewDecoder(res.Body).Decode(&result); err != nil {
 		return nil, fmt.Errorf("error decoding scroll response: %w", err)
 	}
@@ -313,7 +321,7 @@ func (c *ESClient) queryPointInTimeSupported(ctx context.Context) bool {
 	return pointInTimeSupportedIn(esVersion)
 }
 
-func (c *ESClient) Count(ctx context.Context, index string, query map[string]interface{}) (int64, error) {
+func (c *ESClient) Count(ctx context.Context, index string, query types.Query) (int64, error) {
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(map[string]interface{}{
 		"query": query,
@@ -344,10 +352,10 @@ func (c *ESClient) Count(ctx context.Context, index string, query map[string]int
 func (c *ESClient) CountGroupBy(
 	ctx context.Context,
 	index string,
-	query map[string]interface{},
+	query types.Query,
 	aggName string,
 	agg map[string]interface{},
-) (*map[string]interface{}, error) {
+) (*search.Response, error) {
 	searchBody := map[string]interface{}{
 		"query":            query,
 		"size":             0,
@@ -377,7 +385,7 @@ func (c *ESClient) CountGroupBy(
 		return nil, fmt.Errorf("ES error: %s", res.String())
 	}
 
-	var result map[string]interface{}
+	var result search.Response
 	if err := json.NewDecoder(res.Body).Decode(&result); err != nil {
 		return nil, fmt.Errorf("error decoding response: %w", err)
 	}
@@ -414,7 +422,7 @@ func (c *ESClient) GetDateFieldType() string {
 }
 
 // TODO: IMPLEMENT
-func (c *ESClient) Bulk() BulkServiceN {
+func (c *ESClient) Bulk() BulkService {
 	// return newBulkService_n(c.ESClient)
 	return nil
 }
@@ -484,7 +492,7 @@ func (c *ESClient) CreateIndex(ctx context.Context, index string, body map[strin
 	return true, nil
 }
 
-func (c *ESClient) CatIndices(ctx context.Context, target string) (CatIndicesResponse, error) {
+func (c *ESClient) CatIndices(ctx context.Context, target string) (*[]types.IndicesRecord, error) {
 	req := esapi.CatIndicesRequest{
 		Index:  []string{target},
 		Format: "json",
@@ -497,12 +505,12 @@ func (c *ESClient) CatIndices(ctx context.Context, target string) (CatIndicesRes
 		return nil, fmt.Errorf("error getting cat indices for target %s: %s", target, res.String())
 	}
 
-	var data CatIndicesResponse
+	var data []types.IndicesRecord
 	if err := json.NewDecoder(res.Body).Decode(&data); err != nil {
 		return nil, fmt.Errorf("failed to decode cat indices response: %w", err)
 	}
 
-	return data, nil
+	return &data, nil
 }
 
 func (c *ESClient) IsNotFoundError(err error) bool {
@@ -676,7 +684,7 @@ func (c *ESClient) Ping(ctx context.Context) error {
 
 func (c *ESClient) OpenPointInTime(ctx context.Context, index string, keepAliveInterval time.Duration) (string, error) {
 	req := esapi.OpenPointInTimeRequest{
-		Index:     []string{index},
+		Index: []string{index},
 		// KeepAlive: keepAliveInterval,
 	}
 

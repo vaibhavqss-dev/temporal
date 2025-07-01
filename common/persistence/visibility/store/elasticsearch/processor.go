@@ -13,6 +13,7 @@ import (
 	"time"
 
 	"github.com/dgryski/go-farm"
+	"github.com/elastic/go-elasticsearch/v9/esutil"
 	"github.com/olivere/elastic/v7"
 	"go.temporal.io/server/common"
 	"go.temporal.io/server/common/collection"
@@ -39,7 +40,7 @@ type (
 		status                  int32
 		bulkProcessor           client.BulkIndexer
 		bulkProcessorParameters *client.BulkIndexerParameters
-		client                  client.Client
+		client                  client.NewEsClient
 		mapToAckFuture          collection.ConcurrentTxMap // used to map ES request to ack channel
 		logger                  log.Logger
 		metricsHandler          metrics.Handler
@@ -67,6 +68,10 @@ type (
 	}
 )
 
+type ctxKey string
+
+const startKey ctxKey = "flushStart"
+
 var _ Processor = (*processorImpl)(nil)
 
 const (
@@ -80,7 +85,7 @@ var (
 // NewProcessor create new processorImpl
 func NewProcessor(
 	cfg *ProcessorConfig,
-	esClient client.Client,
+	esClient client.NewEsClient,
 	logger log.Logger,
 	metricsHandler metrics.Handler,
 ) *processorImpl {
@@ -98,8 +103,8 @@ func NewProcessor(
 			FlushInterval: cfg.ESProcessorFlushInterval(),
 		},
 	}
-	// p.bulkProcessorParameters.AfterFunc = p.bulkAfterAction
-	// p.bulkProcessorParameters.BeforeFunc = p.bulkBeforeAction
+	p.bulkProcessorParameters.AfterFunc = p.OnFlushEnd
+	p.bulkProcessorParameters.BeforeFunc = p.OnFlushStart
 	return p
 }
 
@@ -182,97 +187,151 @@ func (p *processorImpl) Add(request *client.BulkIndexerRequest, visibilityTaskKe
 }
 
 // bulkBeforeAction is triggered before bulk processor commit
-func (p *processorImpl) bulkBeforeAction(_ int64, requests []elastic.BulkableRequest) {
-	metrics.ElasticsearchBulkProcessorRequests.With(p.metricsHandler).Record(int64(len(requests)))
-	p.metricsHandler.Histogram(metrics.ElasticsearchBulkProcessorBulkSize.Name(), metrics.ElasticsearchBulkProcessorBulkSize.Unit()).
-		Record(int64(len(requests)))
+// func (p *processorImpl) bulkBeforeAction(_ int64, requests []elastic.BulkableRequest) {
+// 	metrics.ElasticsearchBulkProcessorRequests.With(p.metricsHandler).Record(int64(len(requests)))
+// 	p.metricsHandler.Histogram(metrics.ElasticsearchBulkProcessorBulkSize.Name(), metrics.ElasticsearchBulkProcessorBulkSize.Unit()).
+// 		Record(int64(len(requests)))
 
-	for _, request := range requests {
-		visibilityTaskKey := p.extractVisibilityTaskKey(request)
-		if visibilityTaskKey == "" {
-			continue
-		}
-		_, _, _ = p.mapToAckFuture.GetAndDo(visibilityTaskKey, func(key interface{}, value interface{}) error {
-			ackF, ok := value.(*ackFuture)
-			if !ok {
-				p.logger.Fatal(fmt.Sprintf("mapToAckFuture has item of a wrong type %T (%T expected).", value, &ackFuture{}), tag.Value(key))
-			}
-			ackF.recordStart(p.metricsHandler)
-			return nil
-		})
+// 	for _, request := range requests {
+// 		visibilityTaskKey := p.extractVisibilityTaskKey(request)
+// 		if visibilityTaskKey == "" {
+// 			continue
+// 		}
+// 		_, _, _ = p.mapToAckFuture.GetAndDo(visibilityTaskKey, func(key interface{}, value interface{}) error {
+// 			ackF, ok := value.(*ackFuture)
+// 			if !ok {
+// 				p.logger.Fatal(fmt.Sprintf("mapToAckFuture has item of a wrong type %T (%T expected).", value, &ackFuture{}), tag.Value(key))
+// 			}
+// 			ackF.recordStart(p.metricsHandler)
+// 			return nil
+// 		})
+// 	}
+// }
+
+func (p *processorImpl) OnFlushStart(ctx context.Context) context.Context {
+	return context.WithValue(ctx, startKey, time.Now())
+}
+
+func (p *processorImpl) OnFlushEnd(ctx context.Context) {
+	v := ctx.Value(startKey)
+	if v != nil {
+		took := time.Since(v.(time.Time))
+		metrics.ElasticsearchBulkProcessorBulkResquestTookLatency.With(p.metricsHandler).Record(took)
 	}
+
+	stats := p.bulkProcessor.Stats()
+	metrics.ElasticsearchBulkProcessorRequests.With(p.metricsHandler).Record(int64(stats.NumFlushed))
+	p.metricsHandler.Histogram(metrics.ElasticsearchBulkProcessorBulkSize.Name(), metrics.ElasticsearchBulkProcessorBulkSize.Unit()).Record(int64(stats.NumFlushed))
+	p.metricsHandler.Histogram(metrics.ElasticsearchBulkProcessorQueuedRequests.Name(), metrics.ElasticsearchBulkProcessorQueuedRequests.Unit()).Record(int64(p.mapToAckFuture.Len()))
+}
+
+func (p *processorImpl) OnError(ctx context.Context, err error) {
+}
+
+func (p *processorImpl) OnSuccess(ctx context.Context, request esutil.BulkIndexerItem, res esutil.BulkIndexerResponseItem) {
+	visibilityTaskKey := p.extractVisibilityTaskKey(request)
+	if visibilityTaskKey == "" {
+		return
+	}
+	p.notifyResult(visibilityTaskKey, true)
+}
+
+func (p *processorImpl) OnFailure(ctx context.Context, item esutil.BulkIndexerItem, res esutil.BulkIndexerResponseItem, err error) {
+	var httpStatus int
+	errStr := err.Error()
+	if strings.Contains(errStr, "400") {
+		httpStatus = 400
+	} else if strings.Contains(errStr, "401") {
+		httpStatus = 401
+	} else if strings.Contains(errStr, "403") {
+		httpStatus = 403
+	} else if strings.Contains(errStr, "404") {
+		httpStatus = 404
+	} else if strings.Contains(errStr, "409") {
+		httpStatus = 409
+	} else if strings.Contains(errStr, "500") {
+		httpStatus = 500
+	}
+
+	metrics.ElasticsearchBulkProcessorFailures.With(p.metricsHandler).Record(1, metrics.HttpStatusTag(httpStatus))
+	key := p.extractVisibilityTaskKey(item)
+	if key == "" {
+		return
+	}
+	p.notifyResult(key, false)
+	p.logger.Error("Bulk item failure", tag.Error(err), tag.RequestCount(1))
 }
 
 // bulkAfterAction is triggered after bulk processor commit
-func (p *processorImpl) bulkAfterAction(_ int64, requests []elastic.BulkableRequest, response *elastic.BulkResponse, err error) {
-	if err != nil {
-		const logFirstNRequests = 5
-		var httpStatus int
-		var esErr *elastic.Error
-		if errors.As(err, &esErr) {
-			httpStatus = esErr.Status
-		}
+// func (p *processorImpl) bulkAfterAction(_ int64, requests []elastic.BulkableRequest, response *elastic.BulkResponse, err error) {
+// 	if err != nil {
+// 		const logFirstNRequests = 5
+// 		var httpStatus int
+// 		var esErr *elastic.Error
+// 		if errors.As(err, &esErr) {
+// 			httpStatus = esErr.Status
+// 		}
 
-		var logRequests strings.Builder
-		for i, request := range requests {
-			if i < logFirstNRequests {
-				logRequests.WriteString(request.String())
-				logRequests.WriteRune('\n')
-			}
-			metrics.ElasticsearchBulkProcessorFailures.With(p.metricsHandler).Record(1, metrics.HttpStatusTag(httpStatus))
-			visibilityTaskKey := p.extractVisibilityTaskKey(request)
-			if visibilityTaskKey == "" {
-				continue
-			}
-			p.notifyResult(visibilityTaskKey, false)
-		}
-		p.logger.Error("Unable to commit bulk ES request.", tag.Error(err), tag.RequestCount(len(requests)), tag.ESRequest(logRequests.String()))
-		return
-	}
+// 		var logRequests strings.Builder
+// 		for i, request := range requests {
+// 			if i < logFirstNRequests {
+// 				logRequests.WriteString(request.String())
+// 				logRequests.WriteRune('\n')
+// 			}
+// 			metrics.ElasticsearchBulkProcessorFailures.With(p.metricsHandler).Record(1, metrics.HttpStatusTag(httpStatus))
+// 			visibilityTaskKey := p.extractVisibilityTaskKey(request)
+// 			if visibilityTaskKey == "" {
+// 				continue
+// 			}
+// 			p.notifyResult(visibilityTaskKey, false)
+// 		}
+// 		p.logger.Error("Unable to commit bulk ES request.", tag.Error(err), tag.RequestCount(len(requests)), tag.ESRequest(logRequests.String()))
+// 		return
+// 	}
 
-	// Record how long the Elasticsearch took to process the bulk request.
-	metrics.ElasticsearchBulkProcessorBulkResquestTookLatency.With(p.metricsHandler).
-		Record(time.Duration(response.Took) * time.Millisecond)
+// 	// Record how long the Elasticsearch took to process the bulk request.
+// 	metrics.ElasticsearchBulkProcessorBulkResquestTookLatency.With(p.metricsHandler).
+// 		Record(time.Duration(response.Took) * time.Millisecond)
 
-	responseIndex := p.buildResponseIndex(response)
-	for i, request := range requests {
-		visibilityTaskKey := p.extractVisibilityTaskKey(request)
-		if visibilityTaskKey == "" {
-			continue
-		}
+// 	responseIndex := p.buildResponseIndex(response)
+// 	for i, request := range requests {
+// 		visibilityTaskKey := p.extractVisibilityTaskKey(request)
+// 		if visibilityTaskKey == "" {
+// 			continue
+// 		}
 
-		docID := p.extractDocID(request)
-		responseItem, ok := responseIndex[docID]
-		if !ok {
-			p.logger.Error("ES request failed. Request item doesn't have corresponding response item.",
-				tag.Value(i),
-				tag.Key(visibilityTaskKey),
-				tag.ESDocID(docID),
-				tag.ESRequest(request.String()))
-			metrics.ElasticsearchBulkProcessorCorruptedData.With(p.metricsHandler).Record(1)
-			p.notifyResult(visibilityTaskKey, false)
-			continue
-		}
+// 		docID := p.extractDocID(request)
+// 		responseItem, ok := responseIndex[docID]
+// 		if !ok {
+// 			p.logger.Error("ES request failed. Request item doesn't have corresponding response item.",
+// 				tag.Value(i),
+// 				tag.Key(visibilityTaskKey),
+// 				tag.ESDocID(docID),
+// 				tag.ESRequest(request.String()))
+// 			metrics.ElasticsearchBulkProcessorCorruptedData.With(p.metricsHandler).Record(1)
+// 			p.notifyResult(visibilityTaskKey, false)
+// 			continue
+// 		}
 
-		if !isSuccess(responseItem) {
-			p.logger.Error("ES request failed.",
-				tag.ESResponseStatus(responseItem.Status),
-				tag.ESResponseError(extractErrorReason(responseItem)),
-				tag.Key(visibilityTaskKey),
-				tag.ESDocID(docID),
-				tag.ESRequest(request.String()))
-			metrics.ElasticsearchBulkProcessorFailures.With(p.metricsHandler).Record(1, metrics.HttpStatusTag(responseItem.Status))
-			p.notifyResult(visibilityTaskKey, false)
-			continue
-		}
+// 		if !isSuccess(responseItem) {
+// 			p.logger.Error("ES request failed.",
+// 				tag.ESResponseStatus(responseItem.Status),
+// 				tag.ESResponseError(extractErrorReason(responseItem)),
+// 				tag.Key(visibilityTaskKey),
+// 				tag.ESDocID(docID),
+// 				tag.ESRequest(request.String()))
+// 			metrics.ElasticsearchBulkProcessorFailures.With(p.metricsHandler).Record(1, metrics.HttpStatusTag(responseItem.Status))
+// 			p.notifyResult(visibilityTaskKey, false)
+// 			continue
+// 		}
 
-		p.notifyResult(visibilityTaskKey, true)
-	}
+// 		p.notifyResult(visibilityTaskKey, true)
+// 	}
 
-	// Record how many documents are waiting to be flushed to Elasticsearch after this bulk is committed.
-	p.metricsHandler.Histogram(metrics.ElasticsearchBulkProcessorQueuedRequests.Name(), metrics.ElasticsearchBulkProcessorBulkSize.Unit()).
-		Record(int64(p.mapToAckFuture.Len()))
-}
+// 	// Record how many documents are waiting to be flushed to Elasticsearch after this bulk is committed.
+// 	p.metricsHandler.Histogram(metrics.ElasticsearchBulkProcessorQueuedRequests.Name(), metrics.ElasticsearchBulkProcessorBulkSize.Unit()).
+// 		Record(int64(p.mapToAckFuture.Len()))
+// }
 
 func (p *processorImpl) buildResponseIndex(response *elastic.BulkResponse) map[string]*elastic.BulkResponseItem {
 	result := make(map[string]*elastic.BulkResponseItem)

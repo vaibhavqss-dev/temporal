@@ -3,8 +3,38 @@ package client
 import (
 	"context"
 	"fmt"
+	"io"
+	"time"
 
 	"github.com/elastic/go-elasticsearch/v9/esutil"
+)
+
+type (
+	BulkIndexer interface {
+		Stop() error
+		Add(request *BulkIndexerRequest) error
+		Stats() esutil.BulkIndexerStats
+	}
+
+	BulkIndexerParameters struct {
+		Name          string
+		NumOfWorkers  int
+		BulkActions   int
+		BulkSize      int
+		FlushInterval time.Duration
+		BeforeFunc    func(context.Context) context.Context
+		AfterFunc     func(context.Context)
+		// BeforeFunc func(executionId int64, requests []BulkIndexerRequest)
+		// AfterFunc  func(executionId int64, requests []BulkIndexerRequest, response *esutil.BulkIndexerResponse, err error)
+	}
+
+	BulkIndexerRequest struct {
+		RequestType BulkableRequestType
+		Index       string
+		ID          string
+		Version     *int64
+		Doc         io.ReadSeeker
+	}
 )
 
 type (
@@ -54,4 +84,8 @@ func (b *bulkIndexerImpl) Add(request *BulkIndexerRequest) error {
 
 func (b *bulkIndexerImpl) Stop() error {
 	return b.es.Close(b.ctx)
+}
+
+func (b *bulkIndexerImpl) Stats() esutil.BulkIndexerStats {
+	return b.es.Stats()
 }
