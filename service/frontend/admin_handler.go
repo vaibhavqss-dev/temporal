@@ -8,6 +8,7 @@ import (
 	"maps"
 	"math"
 	"net"
+	"reflect"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -2176,6 +2177,40 @@ func (adh *AdminHandler) getDLQWorkflowID(
 			key.TargetCluster,
 		),
 	)
+}
+
+func (adh *AdminHandler) GetClusterConfig(
+	ctx context.Context,
+	request *adminservice.GetClusterConfigRequest,
+) (*adminservice.GetClusterConfigResponse, error) {
+	cfgVal := reflect.ValueOf(adh.config).Elem()
+	cfgType := cfgVal.Type()
+
+	entries := &adminservice.ConfigEntry{IsDynamic: true}
+	entries.Values = make(map[string]string, cfgVal.NumField())
+	for i := 0; i < cfgVal.NumField(); i++ {
+		field := cfgType.Field(i)
+		v := cfgVal.Field(i)
+		var valstr string
+
+		switch v.Kind() {
+		case reflect.Func:
+			if v.Type().NumIn() != 0 || v.Type().NumOut() != 1 {
+				continue
+			} else {
+				val := v.Call(nil)[0].Interface()
+				valstr = fmt.Sprint(val)
+			}
+		default:
+			valstr = fmt.Sprint(v.Interface())
+		}
+
+		entries.Values[field.Name] = valstr
+	}
+	return &adminservice.GetClusterConfigResponse{
+		ClusterName:   adh.clusterMetadata.GetCurrentClusterName(),
+		ConfigEntries: entries,
+	}, nil
 }
 
 func validateHistoryDLQKey(

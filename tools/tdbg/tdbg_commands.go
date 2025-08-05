@@ -68,6 +68,12 @@ func getCommands(
 			Usage:       "Decode payload",
 			Subcommands: newDecodeCommands(taskBlobEncoder),
 		},
+		{
+			Name:        "config",
+			Aliases:     []string{"cfg"},
+			Usage:       "command to config value",
+			Subcommands: newGetConfigValuesCommands(clientFactory),
+		},
 	}
 }
 
@@ -595,6 +601,18 @@ func newAdminTaskQueueCommands(clientFactory ClientFactory) []*cli.Command {
 			},
 			Action: func(c *cli.Context) error {
 				return AdminForceUnloadTaskQueuePartition(c, clientFactory)
+			},
+		},
+	}
+}
+
+func newGetConfigValuesCommands(ClientFactory ClientFactory) []*cli.Command {
+	return []*cli.Command{
+		{
+			Name:  "get",
+			Usage: "Get cluster configuration",
+			Action: func(c *cli.Context) error {
+				return AdminGetClusterConfig(c, ClientFactory)
 			},
 		},
 	}

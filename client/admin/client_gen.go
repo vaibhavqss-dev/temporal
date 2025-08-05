@@ -149,6 +149,16 @@ func (c *clientImpl) GenerateLastHistoryReplicationTasks(
 	return c.client.GenerateLastHistoryReplicationTasks(ctx, request, opts...)
 }
 
+func (c *clientImpl) GetClusterConfig(
+	ctx context.Context,
+	request *adminservice.GetClusterConfigRequest,
+	opts ...grpc.CallOption,
+) (*adminservice.GetClusterConfigResponse, error) {
+	ctx, cancel := c.createContext(ctx)
+	defer cancel()
+	return c.client.GetClusterConfig(ctx, request, opts...)
+}
+
 func (c *clientImpl) GetDLQMessages(
 	ctx context.Context,
 	request *adminservice.GetDLQMessagesRequest,

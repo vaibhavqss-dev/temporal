@@ -177,7 +177,6 @@ func AdminDescribeTaskQueuePartition(c *cli.Context, clientFactory ClientFactory
 		return fmt.Errorf("unable to describe Task Queue Partition: %w", e)
 	} else {
 		prettyPrintJSONObject(c, response)
-
 	}
 	return nil
 }
