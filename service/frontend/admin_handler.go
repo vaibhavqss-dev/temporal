@@ -2183,16 +2183,38 @@ func (adh *AdminHandler) GetClusterConfig(
 	ctx context.Context,
 	request *adminservice.GetClusterConfigRequest,
 ) (*adminservice.GetClusterConfigResponse, error) {
+	clusterEntry := []*adminservice.ClusterConfig{}
+	entries := &adminservice.ClusterConfig{}
+
+	if request.Fanout {
+		listResp, err := adh.ListClusters(ctx, &adminservice.ListClustersRequest{
+			PageSize: listClustersPageSize,
+		})
+		
+		
+		
+
+
+		config, err := adh.GetCurrentClusterConfig(ctx)
+		if err != nil {
+			return nil, err;
+		}
+	 	clusterEntry = append(clusterEntry, adh.clusterMetadata.GetCurrentClusterName())
+	}
+	return &adminservice.GetClusterConfigResponse{
+	 	Clusters: clusterEntry,
+	}, nil
+}
+
+func (adh *AdminHandler) GetCurrentClusterConfig(ctx context.Context) (*adminservice.ClusterConfig, error) {
 	cfgVal := reflect.ValueOf(adh.config).Elem()
 	cfgType := cfgVal.Type()
-
-	entries := &adminservice.ConfigEntry{IsDynamic: true}
-	entries.Values = make(map[string]string, cfgVal.NumField())
+	entries := &adminservice.ClusterConfig{ClusterName: adh.clusterMetadata.GetCurrentClusterName()}
+	// entries.ConfigValues = make(map[string]string, cfgVal.NumField())
 	for i := 0; i < cfgVal.NumField(); i++ {
 		field := cfgType.Field(i)
 		v := cfgVal.Field(i)
 		var valstr string
-
 		switch v.Kind() {
 		case reflect.Func:
 			if v.Type().NumIn() != 0 || v.Type().NumOut() != 1 {
@@ -2204,13 +2226,9 @@ func (adh *AdminHandler) GetClusterConfig(
 		default:
 			valstr = fmt.Sprint(v.Interface())
 		}
-
-		entries.Values[field.Name] = valstr
+		entries.ConfigValues[field.Name] = valstr
 	}
-	return &adminservice.GetClusterConfigResponse{
-		ClusterName:   adh.clusterMetadata.GetCurrentClusterName(),
-		ConfigEntries: entries,
-	}, nil
+	return entries, nil
 }
 
 func validateHistoryDLQKey(

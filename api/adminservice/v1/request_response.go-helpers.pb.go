@@ -3335,35 +3335,35 @@ func (this *GetClusterConfigRequest) Equal(that interface{}) bool {
 	return proto.Equal(this, that1)
 }
 
-// Marshal an object of type ConfigEntry to the protobuf v3 wire format
-func (val *ConfigEntry) Marshal() ([]byte, error) {
+// Marshal an object of type ClusterConfig to the protobuf v3 wire format
+func (val *ClusterConfig) Marshal() ([]byte, error) {
 	return proto.Marshal(val)
 }
 
-// Unmarshal an object of type ConfigEntry from the protobuf v3 wire format
-func (val *ConfigEntry) Unmarshal(buf []byte) error {
+// Unmarshal an object of type ClusterConfig from the protobuf v3 wire format
+func (val *ClusterConfig) Unmarshal(buf []byte) error {
 	return proto.Unmarshal(buf, val)
 }
 
 // Size returns the size of the object, in bytes, once serialized
-func (val *ConfigEntry) Size() int {
+func (val *ClusterConfig) Size() int {
 	return proto.Size(val)
 }
 
-// Equal returns whether two ConfigEntry values are equivalent by recursively
+// Equal returns whether two ClusterConfig values are equivalent by recursively
 // comparing the message's fields.
 // For more information see the documentation for
 // https://pkg.go.dev/google.golang.org/protobuf/proto#Equal
-func (this *ConfigEntry) Equal(that interface{}) bool {
+func (this *ClusterConfig) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	var that1 *ConfigEntry
+	var that1 *ClusterConfig
 	switch t := that.(type) {
-	case *ConfigEntry:
+	case *ClusterConfig:
 		that1 = t
-	case ConfigEntry:
+	case ClusterConfig:
 		that1 = &t
 	default:
 		return false
