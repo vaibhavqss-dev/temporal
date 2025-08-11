@@ -159,6 +159,16 @@ func (c *clientImpl) GetClusterConfig(
 	return c.client.GetClusterConfig(ctx, request, opts...)
 }
 
+func (c *clientImpl) GetCurrentClusterConfig(
+	ctx context.Context,
+	request *adminservice.GetCurrentClusterConfigRequest,
+	opts ...grpc.CallOption,
+) (*adminservice.GetCurrentClusterConfigResponse, error) {
+	ctx, cancel := c.createContext(ctx)
+	defer cancel()
+	return c.client.GetCurrentClusterConfig(ctx, request, opts...)
+}
+
 func (c *clientImpl) GetDLQMessages(
 	ctx context.Context,
 	request *adminservice.GetDLQMessagesRequest,

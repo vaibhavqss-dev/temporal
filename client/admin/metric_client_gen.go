@@ -219,6 +219,20 @@ func (c *metricClient) GetClusterConfig(
 	return c.client.GetClusterConfig(ctx, request, opts...)
 }
 
+func (c *metricClient) GetCurrentClusterConfig(
+	ctx context.Context,
+	request *adminservice.GetCurrentClusterConfigRequest,
+	opts ...grpc.CallOption,
+) (_ *adminservice.GetCurrentClusterConfigResponse, retError error) {
+
+	metricsHandler, startTime := c.startMetricsRecording(ctx, "AdminClientGetCurrentClusterConfig")
+	defer func() {
+		c.finishMetricsRecording(metricsHandler, startTime, retError)
+	}()
+
+	return c.client.GetCurrentClusterConfig(ctx, request, opts...)
+}
+
 func (c *metricClient) GetDLQMessages(
 	ctx context.Context,
 	request *adminservice.GetDLQMessagesRequest,

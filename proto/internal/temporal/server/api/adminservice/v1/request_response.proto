@@ -594,21 +594,23 @@ message ForceUnloadTaskQueuePartitionRequest {
   string namespace = 1;
   temporal.server.api.taskqueue.v1.TaskQueuePartition task_queue_partition = 2;
 }
-
+  
 message ForceUnloadTaskQueuePartitionResponse {
   bool was_loaded = 1;
+} 
+
+message GetCurrentClusterConfigRequest{}
+
+message GetCurrentClusterConfigResponse {
+  string cluster_name = 1;
+  map<string, string> config_values = 2;
 }
 
 message GetClusterConfigRequest {
   bool fanout = 1;
 }
 
-message ClusterConfig {
-  string cluster_name = 1;
-  map<string, string> config_values = 2;
-}
-
 message GetClusterConfigResponse {
-  repeated ClusterConfig clusters = 1;
+  repeated GetCurrentClusterConfigResponse clusters = 1;
   string version = 2;
 }

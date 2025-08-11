@@ -343,6 +343,26 @@ func (mr *MockAdminServiceClientMockRecorder) GetClusterConfig(ctx, in any, opts
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClusterConfig", reflect.TypeOf((*MockAdminServiceClient)(nil).GetClusterConfig), varargs...)
 }
 
+// GetCurrentClusterConfig mocks base method.
+func (m *MockAdminServiceClient) GetCurrentClusterConfig(ctx context.Context, in *adminservice.GetCurrentClusterConfigRequest, opts ...grpc.CallOption) (*adminservice.GetCurrentClusterConfigResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetCurrentClusterConfig", varargs...)
+	ret0, _ := ret[0].(*adminservice.GetCurrentClusterConfigResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCurrentClusterConfig indicates an expected call of GetCurrentClusterConfig.
+func (mr *MockAdminServiceClientMockRecorder) GetCurrentClusterConfig(ctx, in any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCurrentClusterConfig", reflect.TypeOf((*MockAdminServiceClient)(nil).GetCurrentClusterConfig), varargs...)
+}
+
 // GetDLQMessages mocks base method.
 func (m *MockAdminServiceClient) GetDLQMessages(ctx context.Context, in *adminservice.GetDLQMessagesRequest, opts ...grpc.CallOption) (*adminservice.GetDLQMessagesResponse, error) {
 	m.ctrl.T.Helper()
@@ -1308,6 +1328,21 @@ func (m *MockAdminServiceServer) GetClusterConfig(arg0 context.Context, arg1 *ad
 func (mr *MockAdminServiceServerMockRecorder) GetClusterConfig(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClusterConfig", reflect.TypeOf((*MockAdminServiceServer)(nil).GetClusterConfig), arg0, arg1)
+}
+
+// GetCurrentClusterConfig mocks base method.
+func (m *MockAdminServiceServer) GetCurrentClusterConfig(arg0 context.Context, arg1 *adminservice.GetCurrentClusterConfigRequest) (*adminservice.GetCurrentClusterConfigResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetCurrentClusterConfig", arg0, arg1)
+	ret0, _ := ret[0].(*adminservice.GetCurrentClusterConfigResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetCurrentClusterConfig indicates an expected call of GetCurrentClusterConfig.
+func (mr *MockAdminServiceServerMockRecorder) GetCurrentClusterConfig(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetCurrentClusterConfig", reflect.TypeOf((*MockAdminServiceServer)(nil).GetCurrentClusterConfig), arg0, arg1)
 }
 
 // GetDLQMessages mocks base method.

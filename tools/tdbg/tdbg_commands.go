@@ -609,8 +609,15 @@ func newAdminTaskQueueCommands(clientFactory ClientFactory) []*cli.Command {
 func newGetConfigValuesCommands(ClientFactory ClientFactory) []*cli.Command {
 	return []*cli.Command{
 		{
-			Name:  "get",
-			Usage: "Get cluster configuration",
+			Name:    "get",
+			Aliases: []string{"g"},
+			Usage:   "Get cluster configuration",
+			Flags: []cli.Flag{
+				&cli.BoolFlag{
+					Name:  FlagYes,
+					Usage: "Fanout to all clusters, default is false",
+				},
+			},
 			Action: func(c *cli.Context) error {
 				return AdminGetClusterConfig(c, ClientFactory)
 			},

@@ -236,6 +236,21 @@ func (c *retryableClient) GetClusterConfig(
 	return resp, err
 }
 
+func (c *retryableClient) GetCurrentClusterConfig(
+	ctx context.Context,
+	request *adminservice.GetCurrentClusterConfigRequest,
+	opts ...grpc.CallOption,
+) (*adminservice.GetCurrentClusterConfigResponse, error) {
+	var resp *adminservice.GetCurrentClusterConfigResponse
+	op := func(ctx context.Context) error {
+		var err error
+		resp, err = c.client.GetCurrentClusterConfig(ctx, request, opts...)
+		return err
+	}
+	err := backoff.ThrottleRetryContext(ctx, op, c.policy, c.isRetryable)
+	return resp, err
+}
+
 func (c *retryableClient) GetDLQMessages(
 	ctx context.Context,
 	request *adminservice.GetDLQMessagesRequest,

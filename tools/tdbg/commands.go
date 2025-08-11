@@ -728,15 +728,13 @@ func AdminGetClusterConfig(c *cli.Context, clientFactory ClientFactory) error {
 	ctx, cancel := newContext(c)
 	defer cancel()
 
+	fanout := c.Bool(FlagYes)
 	resp, err := adminClient.GetClusterConfig(ctx, &adminservice.GetClusterConfigRequest{
-		Fanout: c.Bool(FlagYes),
+		Fanout: fanout,
 	})
+	
 	if err != nil {
-		return fmt.Errorf("unable to get cluster config: %s", err)
-	}
-
-	if resp == nil {
-		return fmt.Errorf("cluster config is empty")
+		return fmt.Errorf("error getting cluster config: %s", err)
 	}
 
 	prettyPrintJSONObject(c, resp)

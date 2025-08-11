@@ -2086,3 +2086,4 @@ func (s *adminHandlerSuite) validatePhysicalTaskQueueInfo(expectedPhysicalTaskQu
 	s.Equal(expectedPhysicalTaskQueueInfo.GetTaskQueueStats(), responsePhysicalTaskQueueInfo.GetTaskQueueStats())
 	s.Equal(expectedPhysicalTaskQueueInfo.GetInternalTaskQueueStatus(), responsePhysicalTaskQueueInfo.GetInternalTaskQueueStatus())
 }
+

@@ -163,4 +163,6 @@ service AdminService {
     rpc ForceUnloadTaskQueuePartition (ForceUnloadTaskQueuePartitionRequest) returns (ForceUnloadTaskQueuePartitionResponse) {}
 
     rpc GetClusterConfig(GetClusterConfigRequest) returns (GetClusterConfigResponse) {}
+
+    rpc GetCurrentClusterConfig(GetCurrentClusterConfigRequest) returns (GetCurrentClusterConfigResponse) {}
 }
