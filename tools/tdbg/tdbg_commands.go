@@ -612,12 +612,6 @@ func newGetConfigValuesCommands(ClientFactory ClientFactory) []*cli.Command {
 			Name:    "get",
 			Aliases: []string{"g"},
 			Usage:   "Get cluster configuration",
-			Flags: []cli.Flag{
-				&cli.BoolFlag{
-					Name:  FlagYes,
-					Usage: "Fanout to all clusters, default is false",
-				},
-			},
 			Action: func(c *cli.Context) error {
 				return AdminGetClusterConfig(c, ClientFactory)
 			},

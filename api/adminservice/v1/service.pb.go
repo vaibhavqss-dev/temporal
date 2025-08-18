@@ -25,7 +25,7 @@ var File_temporal_server_api_adminservice_v1_service_proto protoreflect.FileDesc
 
 const file_temporal_server_api_adminservice_v1_service_proto_rawDesc = "" +
 	"\n" +
-	"1temporal/server/api/adminservice/v1/service.proto\x12#temporal.server.api.adminservice.v1\x1a:temporal/server/api/adminservice/v1/request_response.proto2\xfc6\n" +
+	"1temporal/server/api/adminservice/v1/service.proto\x12#temporal.server.api.adminservice.v1\x1a:temporal/server/api/adminservice/v1/request_response.proto2\xea6\n" +
 	"\fAdminService\x12\x9a\x01\n" +
 	"\x13RebuildMutableState\x12?.temporal.server.api.adminservice.v1.RebuildMutableStateRequest\x1a@.temporal.server.api.adminservice.v1.RebuildMutableStateResponse\"\x00\x12\xa6\x01\n" +
 	"\x17ImportWorkflowExecution\x12C.temporal.server.api.adminservice.v1.ImportWorkflowExecutionRequest\x1aD.temporal.server.api.adminservice.v1.ImportWorkflowExecutionResponse\"\x00\x12\x9d\x01\n" +
@@ -73,8 +73,8 @@ const file_temporal_server_api_adminservice_v1_service_proto_rawDesc = "" +
 	"#GenerateLastHistoryReplicationTasks\x12O.temporal.server.api.adminservice.v1.GenerateLastHistoryReplicationTasksRequest\x1aP.temporal.server.api.adminservice.v1.GenerateLastHistoryReplicationTasksResponse\"\x00\x12\xaf\x01\n" +
 	"\x1aDescribeTaskQueuePartition\x12F.temporal.server.api.adminservice.v1.DescribeTaskQueuePartitionRequest\x1aG.temporal.server.api.adminservice.v1.DescribeTaskQueuePartitionResponse\"\x00\x12\xb8\x01\n" +
 	"\x1dForceUnloadTaskQueuePartition\x12I.temporal.server.api.adminservice.v1.ForceUnloadTaskQueuePartitionRequest\x1aJ.temporal.server.api.adminservice.v1.ForceUnloadTaskQueuePartitionResponse\"\x00\x12\x91\x01\n" +
-	"\x10GetClusterConfig\x12<.temporal.server.api.adminservice.v1.GetClusterConfigRequest\x1a=.temporal.server.api.adminservice.v1.GetClusterConfigResponse\"\x00\x12\xa6\x01\n" +
-	"\x17GetCurrentClusterConfig\x12C.temporal.server.api.adminservice.v1.GetCurrentClusterConfigRequest\x1aD.temporal.server.api.adminservice.v1.GetCurrentClusterConfigResponse\"\x00B8Z6go.temporal.io/server/api/adminservice/v1;adminserviceb\x06proto3"
+	"\x10GetClusterConfig\x12<.temporal.server.api.adminservice.v1.GetClusterConfigRequest\x1a=.temporal.server.api.adminservice.v1.GetClusterConfigResponse\"\x00\x12\x94\x01\n" +
+	"\x11GetConfigurations\x12=.temporal.server.api.adminservice.v1.GetConfigurationsRequest\x1a>.temporal.server.api.adminservice.v1.GetConfigurationsResponse\"\x00B8Z6go.temporal.io/server/api/adminservice/v1;adminserviceb\x06proto3"
 
 var file_temporal_server_api_adminservice_v1_service_proto_goTypes = []any{
 	(*RebuildMutableStateRequest)(nil),                  // 0: temporal.server.api.adminservice.v1.RebuildMutableStateRequest
@@ -121,7 +121,7 @@ var file_temporal_server_api_adminservice_v1_service_proto_goTypes = []any{
 	(*DescribeTaskQueuePartitionRequest)(nil),           // 41: temporal.server.api.adminservice.v1.DescribeTaskQueuePartitionRequest
 	(*ForceUnloadTaskQueuePartitionRequest)(nil),        // 42: temporal.server.api.adminservice.v1.ForceUnloadTaskQueuePartitionRequest
 	(*GetClusterConfigRequest)(nil),                     // 43: temporal.server.api.adminservice.v1.GetClusterConfigRequest
-	(*GetCurrentClusterConfigRequest)(nil),              // 44: temporal.server.api.adminservice.v1.GetCurrentClusterConfigRequest
+	(*GetConfigurationsRequest)(nil),                    // 44: temporal.server.api.adminservice.v1.GetConfigurationsRequest
 	(*RebuildMutableStateResponse)(nil),                 // 45: temporal.server.api.adminservice.v1.RebuildMutableStateResponse
 	(*ImportWorkflowExecutionResponse)(nil),             // 46: temporal.server.api.adminservice.v1.ImportWorkflowExecutionResponse
 	(*DescribeMutableStateResponse)(nil),                // 47: temporal.server.api.adminservice.v1.DescribeMutableStateResponse
@@ -166,7 +166,7 @@ var file_temporal_server_api_adminservice_v1_service_proto_goTypes = []any{
 	(*DescribeTaskQueuePartitionResponse)(nil),          // 86: temporal.server.api.adminservice.v1.DescribeTaskQueuePartitionResponse
 	(*ForceUnloadTaskQueuePartitionResponse)(nil),       // 87: temporal.server.api.adminservice.v1.ForceUnloadTaskQueuePartitionResponse
 	(*GetClusterConfigResponse)(nil),                    // 88: temporal.server.api.adminservice.v1.GetClusterConfigResponse
-	(*GetCurrentClusterConfigResponse)(nil),             // 89: temporal.server.api.adminservice.v1.GetCurrentClusterConfigResponse
+	(*GetConfigurationsResponse)(nil),                   // 89: temporal.server.api.adminservice.v1.GetConfigurationsResponse
 }
 var file_temporal_server_api_adminservice_v1_service_proto_depIdxs = []int32{
 	0,  // 0: temporal.server.api.adminservice.v1.AdminService.RebuildMutableState:input_type -> temporal.server.api.adminservice.v1.RebuildMutableStateRequest
@@ -213,7 +213,7 @@ var file_temporal_server_api_adminservice_v1_service_proto_depIdxs = []int32{
 	41, // 41: temporal.server.api.adminservice.v1.AdminService.DescribeTaskQueuePartition:input_type -> temporal.server.api.adminservice.v1.DescribeTaskQueuePartitionRequest
 	42, // 42: temporal.server.api.adminservice.v1.AdminService.ForceUnloadTaskQueuePartition:input_type -> temporal.server.api.adminservice.v1.ForceUnloadTaskQueuePartitionRequest
 	43, // 43: temporal.server.api.adminservice.v1.AdminService.GetClusterConfig:input_type -> temporal.server.api.adminservice.v1.GetClusterConfigRequest
-	44, // 44: temporal.server.api.adminservice.v1.AdminService.GetCurrentClusterConfig:input_type -> temporal.server.api.adminservice.v1.GetCurrentClusterConfigRequest
+	44, // 44: temporal.server.api.adminservice.v1.AdminService.GetConfigurations:input_type -> temporal.server.api.adminservice.v1.GetConfigurationsRequest
 	45, // 45: temporal.server.api.adminservice.v1.AdminService.RebuildMutableState:output_type -> temporal.server.api.adminservice.v1.RebuildMutableStateResponse
 	46, // 46: temporal.server.api.adminservice.v1.AdminService.ImportWorkflowExecution:output_type -> temporal.server.api.adminservice.v1.ImportWorkflowExecutionResponse
 	47, // 47: temporal.server.api.adminservice.v1.AdminService.DescribeMutableState:output_type -> temporal.server.api.adminservice.v1.DescribeMutableStateResponse
@@ -258,7 +258,7 @@ var file_temporal_server_api_adminservice_v1_service_proto_depIdxs = []int32{
 	86, // 86: temporal.server.api.adminservice.v1.AdminService.DescribeTaskQueuePartition:output_type -> temporal.server.api.adminservice.v1.DescribeTaskQueuePartitionResponse
 	87, // 87: temporal.server.api.adminservice.v1.AdminService.ForceUnloadTaskQueuePartition:output_type -> temporal.server.api.adminservice.v1.ForceUnloadTaskQueuePartitionResponse
 	88, // 88: temporal.server.api.adminservice.v1.AdminService.GetClusterConfig:output_type -> temporal.server.api.adminservice.v1.GetClusterConfigResponse
-	89, // 89: temporal.server.api.adminservice.v1.AdminService.GetCurrentClusterConfig:output_type -> temporal.server.api.adminservice.v1.GetCurrentClusterConfigResponse
+	89, // 89: temporal.server.api.adminservice.v1.AdminService.GetConfigurations:output_type -> temporal.server.api.adminservice.v1.GetConfigurationsResponse
 	45, // [45:90] is the sub-list for method output_type
 	0,  // [0:45] is the sub-list for method input_type
 	0,  // [0:0] is the sub-list for extension type_name

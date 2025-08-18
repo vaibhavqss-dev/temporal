@@ -3298,35 +3298,35 @@ func (this *ForceUnloadTaskQueuePartitionResponse) Equal(that interface{}) bool 
 	return proto.Equal(this, that1)
 }
 
-// Marshal an object of type GetCurrentClusterConfigRequest to the protobuf v3 wire format
-func (val *GetCurrentClusterConfigRequest) Marshal() ([]byte, error) {
+// Marshal an object of type GetConfigurationsRequest to the protobuf v3 wire format
+func (val *GetConfigurationsRequest) Marshal() ([]byte, error) {
 	return proto.Marshal(val)
 }
 
-// Unmarshal an object of type GetCurrentClusterConfigRequest from the protobuf v3 wire format
-func (val *GetCurrentClusterConfigRequest) Unmarshal(buf []byte) error {
+// Unmarshal an object of type GetConfigurationsRequest from the protobuf v3 wire format
+func (val *GetConfigurationsRequest) Unmarshal(buf []byte) error {
 	return proto.Unmarshal(buf, val)
 }
 
 // Size returns the size of the object, in bytes, once serialized
-func (val *GetCurrentClusterConfigRequest) Size() int {
+func (val *GetConfigurationsRequest) Size() int {
 	return proto.Size(val)
 }
 
-// Equal returns whether two GetCurrentClusterConfigRequest values are equivalent by recursively
+// Equal returns whether two GetConfigurationsRequest values are equivalent by recursively
 // comparing the message's fields.
 // For more information see the documentation for
 // https://pkg.go.dev/google.golang.org/protobuf/proto#Equal
-func (this *GetCurrentClusterConfigRequest) Equal(that interface{}) bool {
+func (this *GetConfigurationsRequest) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	var that1 *GetCurrentClusterConfigRequest
+	var that1 *GetConfigurationsRequest
 	switch t := that.(type) {
-	case *GetCurrentClusterConfigRequest:
+	case *GetConfigurationsRequest:
 		that1 = t
-	case GetCurrentClusterConfigRequest:
+	case GetConfigurationsRequest:
 		that1 = &t
 	default:
 		return false
@@ -3335,35 +3335,35 @@ func (this *GetCurrentClusterConfigRequest) Equal(that interface{}) bool {
 	return proto.Equal(this, that1)
 }
 
-// Marshal an object of type GetCurrentClusterConfigResponse to the protobuf v3 wire format
-func (val *GetCurrentClusterConfigResponse) Marshal() ([]byte, error) {
+// Marshal an object of type GetConfigurationsResponse to the protobuf v3 wire format
+func (val *GetConfigurationsResponse) Marshal() ([]byte, error) {
 	return proto.Marshal(val)
 }
 
-// Unmarshal an object of type GetCurrentClusterConfigResponse from the protobuf v3 wire format
-func (val *GetCurrentClusterConfigResponse) Unmarshal(buf []byte) error {
+// Unmarshal an object of type GetConfigurationsResponse from the protobuf v3 wire format
+func (val *GetConfigurationsResponse) Unmarshal(buf []byte) error {
 	return proto.Unmarshal(buf, val)
 }
 
 // Size returns the size of the object, in bytes, once serialized
-func (val *GetCurrentClusterConfigResponse) Size() int {
+func (val *GetConfigurationsResponse) Size() int {
 	return proto.Size(val)
 }
 
-// Equal returns whether two GetCurrentClusterConfigResponse values are equivalent by recursively
+// Equal returns whether two GetConfigurationsResponse values are equivalent by recursively
 // comparing the message's fields.
 // For more information see the documentation for
 // https://pkg.go.dev/google.golang.org/protobuf/proto#Equal
-func (this *GetCurrentClusterConfigResponse) Equal(that interface{}) bool {
+func (this *GetConfigurationsResponse) Equal(that interface{}) bool {
 	if that == nil {
 		return this == nil
 	}
 
-	var that1 *GetCurrentClusterConfigResponse
+	var that1 *GetConfigurationsResponse
 	switch t := that.(type) {
-	case *GetCurrentClusterConfigResponse:
+	case *GetConfigurationsResponse:
 		that1 = t
-	case GetCurrentClusterConfigResponse:
+	case GetConfigurationsResponse:
 		that1 = &t
 	default:
 		return false

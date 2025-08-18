@@ -97,7 +97,7 @@ type (
 		// private field to track cluster information updates
 		version int64
 	}
-
+	
 	metadataImpl struct {
 		status               int32
 		clusterMetadataStore persistence.ClusterMetadataManager

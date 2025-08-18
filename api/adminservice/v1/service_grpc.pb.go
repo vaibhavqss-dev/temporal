@@ -64,7 +64,7 @@ const (
 	AdminService_DescribeTaskQueuePartition_FullMethodName          = "/temporal.server.api.adminservice.v1.AdminService/DescribeTaskQueuePartition"
 	AdminService_ForceUnloadTaskQueuePartition_FullMethodName       = "/temporal.server.api.adminservice.v1.AdminService/ForceUnloadTaskQueuePartition"
 	AdminService_GetClusterConfig_FullMethodName                    = "/temporal.server.api.adminservice.v1.AdminService/GetClusterConfig"
-	AdminService_GetCurrentClusterConfig_FullMethodName             = "/temporal.server.api.adminservice.v1.AdminService/GetCurrentClusterConfig"
+	AdminService_GetConfigurations_FullMethodName                   = "/temporal.server.api.adminservice.v1.AdminService/GetConfigurations"
 )
 
 // AdminServiceClient is the client API for AdminService service.
@@ -156,7 +156,7 @@ type AdminServiceClient interface {
 	DescribeTaskQueuePartition(ctx context.Context, in *DescribeTaskQueuePartitionRequest, opts ...grpc.CallOption) (*DescribeTaskQueuePartitionResponse, error)
 	ForceUnloadTaskQueuePartition(ctx context.Context, in *ForceUnloadTaskQueuePartitionRequest, opts ...grpc.CallOption) (*ForceUnloadTaskQueuePartitionResponse, error)
 	GetClusterConfig(ctx context.Context, in *GetClusterConfigRequest, opts ...grpc.CallOption) (*GetClusterConfigResponse, error)
-	GetCurrentClusterConfig(ctx context.Context, in *GetCurrentClusterConfigRequest, opts ...grpc.CallOption) (*GetCurrentClusterConfigResponse, error)
+	GetConfigurations(ctx context.Context, in *GetConfigurationsRequest, opts ...grpc.CallOption) (*GetConfigurationsResponse, error)
 }
 
 type adminServiceClient struct {
@@ -585,9 +585,9 @@ func (c *adminServiceClient) GetClusterConfig(ctx context.Context, in *GetCluste
 	return out, nil
 }
 
-func (c *adminServiceClient) GetCurrentClusterConfig(ctx context.Context, in *GetCurrentClusterConfigRequest, opts ...grpc.CallOption) (*GetCurrentClusterConfigResponse, error) {
-	out := new(GetCurrentClusterConfigResponse)
-	err := c.cc.Invoke(ctx, AdminService_GetCurrentClusterConfig_FullMethodName, in, out, opts...)
+func (c *adminServiceClient) GetConfigurations(ctx context.Context, in *GetConfigurationsRequest, opts ...grpc.CallOption) (*GetConfigurationsResponse, error) {
+	out := new(GetConfigurationsResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetConfigurations_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -683,7 +683,7 @@ type AdminServiceServer interface {
 	DescribeTaskQueuePartition(context.Context, *DescribeTaskQueuePartitionRequest) (*DescribeTaskQueuePartitionResponse, error)
 	ForceUnloadTaskQueuePartition(context.Context, *ForceUnloadTaskQueuePartitionRequest) (*ForceUnloadTaskQueuePartitionResponse, error)
 	GetClusterConfig(context.Context, *GetClusterConfigRequest) (*GetClusterConfigResponse, error)
-	GetCurrentClusterConfig(context.Context, *GetCurrentClusterConfigRequest) (*GetCurrentClusterConfigResponse, error)
+	GetConfigurations(context.Context, *GetConfigurationsRequest) (*GetConfigurationsResponse, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }
 
@@ -823,8 +823,8 @@ func (UnimplementedAdminServiceServer) ForceUnloadTaskQueuePartition(context.Con
 func (UnimplementedAdminServiceServer) GetClusterConfig(context.Context, *GetClusterConfigRequest) (*GetClusterConfigResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method GetClusterConfig not implemented")
 }
-func (UnimplementedAdminServiceServer) GetCurrentClusterConfig(context.Context, *GetCurrentClusterConfigRequest) (*GetCurrentClusterConfigResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetCurrentClusterConfig not implemented")
+func (UnimplementedAdminServiceServer) GetConfigurations(context.Context, *GetConfigurationsRequest) (*GetConfigurationsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetConfigurations not implemented")
 }
 func (UnimplementedAdminServiceServer) mustEmbedUnimplementedAdminServiceServer() {}
 
@@ -1639,20 +1639,20 @@ func _AdminService_GetClusterConfig_Handler(srv interface{}, ctx context.Context
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_GetCurrentClusterConfig_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetCurrentClusterConfigRequest)
+func _AdminService_GetConfigurations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetConfigurationsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).GetCurrentClusterConfig(ctx, in)
+		return srv.(AdminServiceServer).GetConfigurations(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AdminService_GetCurrentClusterConfig_FullMethodName,
+		FullMethod: AdminService_GetConfigurations_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).GetCurrentClusterConfig(ctx, req.(*GetCurrentClusterConfigRequest))
+		return srv.(AdminServiceServer).GetConfigurations(ctx, req.(*GetConfigurationsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1837,8 +1837,8 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_GetClusterConfig_Handler,
 		},
 		{
-			MethodName: "GetCurrentClusterConfig",
-			Handler:    _AdminService_GetCurrentClusterConfig_Handler,
+			MethodName: "GetConfigurations",
+			Handler:    _AdminService_GetConfigurations_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

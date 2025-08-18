@@ -164,5 +164,5 @@ service AdminService {
 
     rpc GetClusterConfig(GetClusterConfigRequest) returns (GetClusterConfigResponse) {}
 
-    rpc GetCurrentClusterConfig(GetCurrentClusterConfigRequest) returns (GetCurrentClusterConfigResponse) {}
+    rpc GetConfigurations(GetConfigurationsRequest) returns (GetConfigurationsResponse) {}
 }

@@ -2183,43 +2183,42 @@ func (adh *AdminHandler) GetClusterConfig(
 	ctx context.Context,
 	request *adminservice.GetClusterConfigRequest,
 ) (*adminservice.GetClusterConfigResponse, error) {
-	adh.logger.Info("GetClusterConfig called", tag.Bool(request.Fanout))
-	clusterEntry := []*adminservice.GetCurrentClusterConfigResponse{}
-	if request.Fanout {
-		listResp := adh.clusterMetadata.GetAllClusterInfo()
-		for _, cluster := range listResp {
-			adminClient := adh.clientFactory.NewRemoteAdminClientWithTimeout(
-				cluster.RPCAddress,
-				admin.DefaultTimeout,
-				admin.DefaultLargeTimeout,
-			)
-
-			resp, err := adminClient.GetCurrentClusterConfig(ctx, &adminservice.GetCurrentClusterConfigRequest{})
-			if err != nil {
-				adh.logger.Error("Failed to get current cluster config")
-				continue
-			}
-			clusterEntry = append(clusterEntry, resp)
-		}
-	} else {
-		config, err := adh.GetCurrentClusterConfig(ctx, &adminservice.GetCurrentClusterConfigRequest{})
-		if err != nil {
-			adh.logger.Error("Failed to get current cluster config", tag.Error(err))
-			return nil, err
-		}
-		clusterEntry = append(clusterEntry, config)
+	resp := &adminservice.GetClusterConfigResponse{
+		ClusterName: adh.clusterMetadata.GetCurrentClusterName(),
 	}
-	return &adminservice.GetClusterConfigResponse{
-		Clusters: clusterEntry,
-	}, nil
+	// listNodes, err := adh.clusterMetadataManager.GetClusterMembers(ctx, &persistence.GetClusterMembersRequest{
+	// 	PageSize:   listClustersPageSize,
+	// 	RoleEquals: persistence.ServiceType(1),
+	// })
+	// if err != nil {
+	// 	return nil, err
+	// }
+	// for _, member := range listNodes.ActiveMembers {
+	// 	addr := fmt.Sprintf("%s:%d", member.RPCAddress.String(), member.RPCPort)
+	// 	adh.logger.Info("***Vaibhav***", tag.Address(addr))
+	// 	adminClient := adh.clientFactory.NewRemoteAdminClientWithTimeout(
+	// 		addr,
+	// 		admin.DefaultTimeout,
+	// 		admin.DefaultLargeTimeout,
+	// 	)
+	// 	configurations, _ := adminClient.GetConfigurations(ctx, &adminservice.GetConfigurationsRequest{})
+	// 	resp.ConfigValues = append(resp.ConfigValues, configurations)
+	// }
+
+	currentCfg, err := adh.GetConfigurations(ctx, &adminservice.GetConfigurationsRequest{})
+	if err != nil {
+		return nil, err
+	}
+	resp.Nodes = append(resp.Nodes, currentCfg)
+	return resp, nil
 }
 
-func (adh *AdminHandler) GetCurrentClusterConfig(ctx context.Context, req *adminservice.GetCurrentClusterConfigRequest) (*adminservice.GetCurrentClusterConfigResponse, error) {
+func (adh *AdminHandler) GetConfigurations(ctx context.Context, req *adminservice.GetConfigurationsRequest) (*adminservice.GetConfigurationsResponse, error) {
 	cfgVal := reflect.ValueOf(adh.config).Elem()
 	cfgType := cfgVal.Type()
-
-	entries := &adminservice.GetCurrentClusterConfigResponse{ClusterName: adh.clusterMetadata.GetCurrentClusterName()}
+	entries := &adminservice.GetConfigurationsResponse{}
 	entries.ConfigValues = make(map[string]string, cfgVal.NumField())
+
 	for i := 0; i < cfgVal.NumField(); i++ {
 		field := cfgType.Field(i)
 		v := cfgVal.Field(i)

@@ -69,7 +69,7 @@ clusterMetadata:
     cluster-a:
       enabled: true
       initialFailoverVersion: 1
-      rpcName: "frontend"
+      rpcName: "frontend"                 
       rpcAddress: "localhost:7233"
 # Use tctl --ad 127.0.0.1:7233 adm cl upsert-remote-cluster --frontend_address "127.0.0.1:8233"
     cluster-b:
