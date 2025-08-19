@@ -728,7 +728,7 @@ func AdminGetClusterConfig(c *cli.Context, clientFactory ClientFactory) error {
 	ctx, cancel := newContext(c)
 	defer cancel()
 
-	resp, err := adminClient.GetClusterConfig(ctx, &adminservice.GetClusterConfigRequest{})	
+	resp, err := adminClient.GetConfigurations(ctx, &adminservice.GetConfigurationsRequest{})	
 	if err != nil {
 		return fmt.Errorf("error getting cluster config: %s", err)
 	}

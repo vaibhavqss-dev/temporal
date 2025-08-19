@@ -2,6 +2,7 @@ package frontend
 
 import (
 	"context"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -9,6 +10,7 @@ import (
 	"math"
 	"net"
 	"reflect"
+	"regexp"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -62,6 +64,7 @@ import (
 	"go.temporal.io/server/service/worker/dlq"
 	"google.golang.org/grpc/health"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
+	"google.golang.org/protobuf/types/known/structpb"
 	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
@@ -2179,64 +2182,128 @@ func (adh *AdminHandler) getDLQWorkflowID(
 	)
 }
 
-func (adh *AdminHandler) GetClusterConfig(
+
+
+func (adh *AdminHandler) GetConfigurations(
 	ctx context.Context,
-	request *adminservice.GetClusterConfigRequest,
-) (*adminservice.GetClusterConfigResponse, error) {
-	resp := &adminservice.GetClusterConfigResponse{
-		ClusterName: adh.clusterMetadata.GetCurrentClusterName(),
+	req *adminservice.GetConfigurationsRequest,
+) (*adminservice.GetConfigurationsResponse, error) {
+	cfgVal := reflect.ValueOf(adh.config)
+	if cfgVal.Kind() == reflect.Ptr {
+		cfgVal = cfgVal.Elem()
 	}
-	// listNodes, err := adh.clusterMetadataManager.GetClusterMembers(ctx, &persistence.GetClusterMembersRequest{
-	// 	PageSize:   listClustersPageSize,
-	// 	RoleEquals: persistence.ServiceType(1),
-	// })
-	// if err != nil {
-	// 	return nil, err
-	// }
-	// for _, member := range listNodes.ActiveMembers {
-	// 	addr := fmt.Sprintf("%s:%d", member.RPCAddress.String(), member.RPCPort)
-	// 	adh.logger.Info("***Vaibhav***", tag.Address(addr))
-	// 	adminClient := adh.clientFactory.NewRemoteAdminClientWithTimeout(
-	// 		addr,
-	// 		admin.DefaultTimeout,
-	// 		admin.DefaultLargeTimeout,
-	// 	)
-	// 	configurations, _ := adminClient.GetConfigurations(ctx, &adminservice.GetConfigurationsRequest{})
-	// 	resp.ConfigValues = append(resp.ConfigValues, configurations)
-	// }
-
-	currentCfg, err := adh.GetConfigurations(ctx, &adminservice.GetConfigurationsRequest{})
-	if err != nil {
-		return nil, err
-	}
-	resp.Nodes = append(resp.Nodes, currentCfg)
-	return resp, nil
-}
-
-func (adh *AdminHandler) GetConfigurations(ctx context.Context, req *adminservice.GetConfigurationsRequest) (*adminservice.GetConfigurationsResponse, error) {
-	cfgVal := reflect.ValueOf(adh.config).Elem()
 	cfgType := cfgVal.Type()
-	entries := &adminservice.GetConfigurationsResponse{}
-	entries.ConfigValues = make(map[string]string, cfgVal.NumField())
+	entries := &adminservice.GetConfigurationsResponse{
+		ClusterName:  adh.clusterMetadata.GetCurrentClusterName(),
+		ConfigValues: make(map[string]*structpb.Value, cfgVal.NumField()),
+	}
 
 	for i := 0; i < cfgVal.NumField(); i++ {
 		field := cfgType.Field(i)
 		v := cfgVal.Field(i)
-		var valstr string
-		switch v.Kind() {
-		case reflect.Func:
-			if v.Type().NumIn() != 0 || v.Type().NumOut() != 1 {
-				continue
+
+		var raw interface{}
+		if v.Kind() == reflect.Func {
+			// only call functions with allowed signatures:
+			// - func() T
+			// - func(string) T  (namespace-filter style) -> call with empty string
+			ft := v.Type()
+			if ft.NumOut() == 1 {
+				if ft.NumIn() == 0 {
+					// call zero-arg
+					defer func() { _ = recover() }()
+					out := v.Call(nil)
+					if len(out) == 1 {
+						raw = out[0].Interface()
+					}
+				} else if ft.NumIn() == 1 && ft.In(0).Kind() == reflect.String {
+					// call with empty namespace to get "global/default" value
+					defer func() { _ = recover() }()
+					out := v.Call([]reflect.Value{reflect.ValueOf("")})
+					if len(out) == 1 {
+						raw = out[0].Interface()
+					}
+				} else {
+					// unsupported function signature -> skip
+					continue
+				}
 			} else {
-				val := v.Call(nil)[0].Interface()
-				valstr = fmt.Sprint(val)
+				// unsupported function outputs -> skip
+				continue
 			}
-		default:
-			valstr = fmt.Sprint(v.Interface())
+		} else {
+			// not a function, get concrete value
+			raw = v.Interface()
 		}
-		entries.ConfigValues[field.Name] = valstr
+
+		// convert raw value into *structpb.Value
+		pbVal := toPBValue(raw)
+		entries.ConfigValues[field.Name] = pbVal
 	}
+
 	return entries, nil
+}
+
+func toPBValue(val interface{}) *structpb.Value {
+	if val == nil {
+		return structpb.NewNullValue()
+	}
+	switch t := val.(type) {
+	case string:
+		return structpb.NewStringValue(t)
+	case bool:
+		return structpb.NewBoolValue(t)
+	case int:
+		return structpb.NewNumberValue(float64(t))
+	case int32:
+		return structpb.NewNumberValue(float64(t))
+	case int64:
+		return structpb.NewNumberValue(float64(t))
+	case float32:
+		return structpb.NewNumberValue(float64(t))
+	case float64:
+		return structpb.NewNumberValue(t)
+	case time.Duration:
+		return structpb.NewStringValue(t.String())
+	case fmt.Stringer:
+		return structpb.NewStringValue(t.String())
+	}
+	if re, ok := val.(*regexp.Regexp); ok && re != nil {
+		return structpb.NewStringValue(re.String())
+	}
+	if re2, ok := val.(regexp.Regexp); ok {
+		return structpb.NewStringValue(re2.String())
+	}
+	// dynamicconfig.GlobalCachedTypedValue[*T] patterns:
+	// try common cases by reflection to call Get() method if present
+	rv := reflect.ValueOf(val)
+	if rv.IsValid() && rv.Kind() == reflect.Ptr {
+		// if pointer has method Get() with zero args and one return -> call it
+		if m := rv.MethodByName("Get"); m.IsValid() {
+			if m.Type().NumIn() == 0 && m.Type().NumOut() == 1 {
+				defer func() {
+					_ = recover() // be defensive
+				}()
+				out := m.Call(nil)[0].Interface()
+				// recurse to convert
+				return toPBValue(out)
+			}
+		}
+	}
+
+	// For complex structs, marshal -> unmarshal into interface{} then structpb.NewValue
+	{
+		bs, err := json.Marshal(val)
+		if err == nil {
+			var out interface{}
+			if err2 := json.Unmarshal(bs, &out); err2 == nil {
+				if pb, err3 := structpb.NewValue(out); err3 == nil {
+					return pb
+				}
+			}
+		}
+	}
+	return structpb.NewStringValue(fmt.Sprint(val))
 }
 
 func validateHistoryDLQKey(

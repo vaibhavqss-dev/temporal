@@ -323,26 +323,6 @@ func (mr *MockAdminServiceClientMockRecorder) GenerateLastHistoryReplicationTask
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateLastHistoryReplicationTasks", reflect.TypeOf((*MockAdminServiceClient)(nil).GenerateLastHistoryReplicationTasks), varargs...)
 }
 
-// GetClusterConfig mocks base method.
-func (m *MockAdminServiceClient) GetClusterConfig(ctx context.Context, in *adminservice.GetClusterConfigRequest, opts ...grpc.CallOption) (*adminservice.GetClusterConfigResponse, error) {
-	m.ctrl.T.Helper()
-	varargs := []any{ctx, in}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "GetClusterConfig", varargs...)
-	ret0, _ := ret[0].(*adminservice.GetClusterConfigResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetClusterConfig indicates an expected call of GetClusterConfig.
-func (mr *MockAdminServiceClientMockRecorder) GetClusterConfig(ctx, in any, opts ...any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClusterConfig", reflect.TypeOf((*MockAdminServiceClient)(nil).GetClusterConfig), varargs...)
-}
-
 // GetConfigurations mocks base method.
 func (m *MockAdminServiceClient) GetConfigurations(ctx context.Context, in *adminservice.GetConfigurationsRequest, opts ...grpc.CallOption) (*adminservice.GetConfigurationsResponse, error) {
 	m.ctrl.T.Helper()
@@ -1313,21 +1293,6 @@ func (m *MockAdminServiceServer) GenerateLastHistoryReplicationTasks(arg0 contex
 func (mr *MockAdminServiceServerMockRecorder) GenerateLastHistoryReplicationTasks(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateLastHistoryReplicationTasks", reflect.TypeOf((*MockAdminServiceServer)(nil).GenerateLastHistoryReplicationTasks), arg0, arg1)
-}
-
-// GetClusterConfig mocks base method.
-func (m *MockAdminServiceServer) GetClusterConfig(arg0 context.Context, arg1 *adminservice.GetClusterConfigRequest) (*adminservice.GetClusterConfigResponse, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetClusterConfig", arg0, arg1)
-	ret0, _ := ret[0].(*adminservice.GetClusterConfigResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetClusterConfig indicates an expected call of GetClusterConfig.
-func (mr *MockAdminServiceServerMockRecorder) GetClusterConfig(arg0, arg1 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetClusterConfig", reflect.TypeOf((*MockAdminServiceServer)(nil).GetClusterConfig), arg0, arg1)
 }
 
 // GetConfigurations mocks base method.

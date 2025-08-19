@@ -205,20 +205,6 @@ func (c *metricClient) GenerateLastHistoryReplicationTasks(
 	return c.client.GenerateLastHistoryReplicationTasks(ctx, request, opts...)
 }
 
-func (c *metricClient) GetClusterConfig(
-	ctx context.Context,
-	request *adminservice.GetClusterConfigRequest,
-	opts ...grpc.CallOption,
-) (_ *adminservice.GetClusterConfigResponse, retError error) {
-
-	metricsHandler, startTime := c.startMetricsRecording(ctx, "AdminClientGetClusterConfig")
-	defer func() {
-		c.finishMetricsRecording(metricsHandler, startTime, retError)
-	}()
-
-	return c.client.GetClusterConfig(ctx, request, opts...)
-}
-
 func (c *metricClient) GetConfigurations(
 	ctx context.Context,
 	request *adminservice.GetConfigurationsRequest,

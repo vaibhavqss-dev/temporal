@@ -221,21 +221,6 @@ func (c *retryableClient) GenerateLastHistoryReplicationTasks(
 	return resp, err
 }
 
-func (c *retryableClient) GetClusterConfig(
-	ctx context.Context,
-	request *adminservice.GetClusterConfigRequest,
-	opts ...grpc.CallOption,
-) (*adminservice.GetClusterConfigResponse, error) {
-	var resp *adminservice.GetClusterConfigResponse
-	op := func(ctx context.Context) error {
-		var err error
-		resp, err = c.client.GetClusterConfig(ctx, request, opts...)
-		return err
-	}
-	err := backoff.ThrottleRetryContext(ctx, op, c.policy, c.isRetryable)
-	return resp, err
-}
-
 func (c *retryableClient) GetConfigurations(
 	ctx context.Context,
 	request *adminservice.GetConfigurationsRequest,
