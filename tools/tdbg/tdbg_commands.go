@@ -611,9 +611,27 @@ func newGetConfigValuesCommands(ClientFactory ClientFactory) []*cli.Command {
 		{
 			Name:    "get",
 			Aliases: []string{"g"},
-			Usage:   "Get cluster configuration",
+			Usage:   "Get frontend dynamic configuration",
+			Flags: []cli.Flag{
+				&cli.StringFlag{
+					Name:  FlagNamespace,
+					Usage: "Namespace",
+					Value: "default",
+					Aliases: []string{
+						"n",
+					},
+				},
+				&cli.StringFlag{
+					Name:  FlagKey,
+					Usage: "Key to get the value for",
+					Value: "",
+					Aliases: []string{
+						"k",
+					},
+				},
+			},
 			Action: func(c *cli.Context) error {
-				return AdminGetClusterConfig(c, ClientFactory)
+			 	return AdminGetClusterConfig(c, ClientFactory)
 			},
 		},
 	}

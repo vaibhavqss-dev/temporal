@@ -5255,26 +5255,30 @@ func (x *ForceUnloadTaskQueuePartitionResponse) GetWasLoaded() bool {
 	return false
 }
 
-type GetConfigurationsRequest struct {
-	state         protoimpl.MessageState `protogen:"open.v1"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
+type HostConfig struct {
+	state protoimpl.MessageState `protogen:"open.v1"`
+	// The host that this configuration was loaded from.
+	Hostname string `protobuf:"bytes,1,opt,name=hostname,proto3" json:"hostname,omitempty"`
+	// The raw dynamic config loaded with all constraints.
+	RawDynamicConfig *structpb.Struct `protobuf:"bytes,2,opt,name=raw_dynamic_config,json=rawDynamicConfig,proto3" json:"raw_dynamic_config,omitempty"`
+	unknownFields    protoimpl.UnknownFields
+	sizeCache        protoimpl.SizeCache
 }
 
-func (x *GetConfigurationsRequest) Reset() {
-	*x = GetConfigurationsRequest{}
+func (x *HostConfig) Reset() {
+	*x = HostConfig{}
 	mi := &file_temporal_server_api_adminservice_v1_request_response_proto_msgTypes[89]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
 
-func (x *GetConfigurationsRequest) String() string {
+func (x *HostConfig) String() string {
 	return protoimpl.X.MessageStringOf(x)
 }
 
-func (*GetConfigurationsRequest) ProtoMessage() {}
+func (*HostConfig) ProtoMessage() {}
 
-func (x *GetConfigurationsRequest) ProtoReflect() protoreflect.Message {
+func (x *HostConfig) ProtoReflect() protoreflect.Message {
 	mi := &file_temporal_server_api_adminservice_v1_request_response_proto_msgTypes[89]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
@@ -5286,59 +5290,117 @@ func (x *GetConfigurationsRequest) ProtoReflect() protoreflect.Message {
 	return mi.MessageOf(x)
 }
 
-// Deprecated: Use GetConfigurationsRequest.ProtoReflect.Descriptor instead.
-func (*GetConfigurationsRequest) Descriptor() ([]byte, []int) {
+// Deprecated: Use HostConfig.ProtoReflect.Descriptor instead.
+func (*HostConfig) Descriptor() ([]byte, []int) {
 	return file_temporal_server_api_adminservice_v1_request_response_proto_rawDescGZIP(), []int{89}
 }
 
-type GetConfigurationsResponse struct {
-	state         protoimpl.MessageState     `protogen:"open.v1"`
-	ClusterName   string                     `protobuf:"bytes,1,opt,name=cluster_name,json=clusterName,proto3" json:"cluster_name,omitempty"`
-	ConfigValues  map[string]*structpb.Value `protobuf:"bytes,2,rep,name=config_values,json=configValues,proto3" json:"config_values,omitempty" protobuf_key:"bytes,1,opt,name=key" protobuf_val:"bytes,2,opt,name=value"`
-	unknownFields protoimpl.UnknownFields
-	sizeCache     protoimpl.SizeCache
-}
-
-func (x *GetConfigurationsResponse) Reset() {
-	*x = GetConfigurationsResponse{}
-	mi := &file_temporal_server_api_adminservice_v1_request_response_proto_msgTypes[90]
-	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-	ms.StoreMessageInfo(mi)
-}
-
-func (x *GetConfigurationsResponse) String() string {
-	return protoimpl.X.MessageStringOf(x)
-}
-
-func (*GetConfigurationsResponse) ProtoMessage() {}
-
-func (x *GetConfigurationsResponse) ProtoReflect() protoreflect.Message {
-	mi := &file_temporal_server_api_adminservice_v1_request_response_proto_msgTypes[90]
+func (x *HostConfig) GetHostname() string {
 	if x != nil {
-		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
-		if ms.LoadMessageInfo() == nil {
-			ms.StoreMessageInfo(mi)
-		}
-		return ms
-	}
-	return mi.MessageOf(x)
-}
-
-// Deprecated: Use GetConfigurationsResponse.ProtoReflect.Descriptor instead.
-func (*GetConfigurationsResponse) Descriptor() ([]byte, []int) {
-	return file_temporal_server_api_adminservice_v1_request_response_proto_rawDescGZIP(), []int{90}
-}
-
-func (x *GetConfigurationsResponse) GetClusterName() string {
-	if x != nil {
-		return x.ClusterName
+		return x.Hostname
 	}
 	return ""
 }
 
-func (x *GetConfigurationsResponse) GetConfigValues() map[string]*structpb.Value {
+func (x *HostConfig) GetRawDynamicConfig() *structpb.Struct {
 	if x != nil {
-		return x.ConfigValues
+		return x.RawDynamicConfig
+	}
+	return nil
+}
+
+type GetDynamicConfigurationsRequest struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	Key           string                 `protobuf:"bytes,1,opt,name=key,proto3" json:"key,omitempty"`
+	Namespace     string                 `protobuf:"bytes,2,opt,name=namespace,proto3" json:"namespace,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetDynamicConfigurationsRequest) Reset() {
+	*x = GetDynamicConfigurationsRequest{}
+	mi := &file_temporal_server_api_adminservice_v1_request_response_proto_msgTypes[90]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetDynamicConfigurationsRequest) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetDynamicConfigurationsRequest) ProtoMessage() {}
+
+func (x *GetDynamicConfigurationsRequest) ProtoReflect() protoreflect.Message {
+	mi := &file_temporal_server_api_adminservice_v1_request_response_proto_msgTypes[90]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetDynamicConfigurationsRequest.ProtoReflect.Descriptor instead.
+func (*GetDynamicConfigurationsRequest) Descriptor() ([]byte, []int) {
+	return file_temporal_server_api_adminservice_v1_request_response_proto_rawDescGZIP(), []int{90}
+}
+
+func (x *GetDynamicConfigurationsRequest) GetKey() string {
+	if x != nil {
+		return x.Key
+	}
+	return ""
+}
+
+func (x *GetDynamicConfigurationsRequest) GetNamespace() string {
+	if x != nil {
+		return x.Namespace
+	}
+	return ""
+}
+
+type GetDynamicConfigurationsResponse struct {
+	state         protoimpl.MessageState `protogen:"open.v1"`
+	HostConfig    []*HostConfig          `protobuf:"bytes,1,rep,name=host_config,json=hostConfig,proto3" json:"host_config,omitempty"`
+	unknownFields protoimpl.UnknownFields
+	sizeCache     protoimpl.SizeCache
+}
+
+func (x *GetDynamicConfigurationsResponse) Reset() {
+	*x = GetDynamicConfigurationsResponse{}
+	mi := &file_temporal_server_api_adminservice_v1_request_response_proto_msgTypes[91]
+	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+	ms.StoreMessageInfo(mi)
+}
+
+func (x *GetDynamicConfigurationsResponse) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*GetDynamicConfigurationsResponse) ProtoMessage() {}
+
+func (x *GetDynamicConfigurationsResponse) ProtoReflect() protoreflect.Message {
+	mi := &file_temporal_server_api_adminservice_v1_request_response_proto_msgTypes[91]
+	if x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use GetDynamicConfigurationsResponse.ProtoReflect.Descriptor instead.
+func (*GetDynamicConfigurationsResponse) Descriptor() ([]byte, []int) {
+	return file_temporal_server_api_adminservice_v1_request_response_proto_rawDescGZIP(), []int{91}
+}
+
+func (x *GetDynamicConfigurationsResponse) GetHostConfig() []*HostConfig {
+	if x != nil {
+		return x.HostConfig
 	}
 	return nil
 }
@@ -5353,7 +5415,7 @@ type AddTasksRequest_Task struct {
 
 func (x *AddTasksRequest_Task) Reset() {
 	*x = AddTasksRequest_Task{}
-	mi := &file_temporal_server_api_adminservice_v1_request_response_proto_msgTypes[98]
+	mi := &file_temporal_server_api_adminservice_v1_request_response_proto_msgTypes[99]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5365,7 +5427,7 @@ func (x *AddTasksRequest_Task) String() string {
 func (*AddTasksRequest_Task) ProtoMessage() {}
 
 func (x *AddTasksRequest_Task) ProtoReflect() protoreflect.Message {
-	mi := &file_temporal_server_api_adminservice_v1_request_response_proto_msgTypes[98]
+	mi := &file_temporal_server_api_adminservice_v1_request_response_proto_msgTypes[99]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5405,7 +5467,7 @@ type ListQueuesResponse_QueueInfo struct {
 
 func (x *ListQueuesResponse_QueueInfo) Reset() {
 	*x = ListQueuesResponse_QueueInfo{}
-	mi := &file_temporal_server_api_adminservice_v1_request_response_proto_msgTypes[99]
+	mi := &file_temporal_server_api_adminservice_v1_request_response_proto_msgTypes[100]
 	ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 	ms.StoreMessageInfo(mi)
 }
@@ -5417,7 +5479,7 @@ func (x *ListQueuesResponse_QueueInfo) String() string {
 func (*ListQueuesResponse_QueueInfo) ProtoMessage() {}
 
 func (x *ListQueuesResponse_QueueInfo) ProtoReflect() protoreflect.Message {
-	mi := &file_temporal_server_api_adminservice_v1_request_response_proto_msgTypes[99]
+	mi := &file_temporal_server_api_adminservice_v1_request_response_proto_msgTypes[100]
 	if x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -5838,14 +5900,17 @@ const file_temporal_server_api_adminservice_v1_request_response_proto_rawDesc = 
 	"\x14task_queue_partition\x18\x02 \x01(\v24.temporal.server.api.taskqueue.v1.TaskQueuePartitionR\x12taskQueuePartition\"F\n" +
 	"%ForceUnloadTaskQueuePartitionResponse\x12\x1d\n" +
 	"\n" +
-	"was_loaded\x18\x01 \x01(\bR\twasLoaded\"\x1a\n" +
-	"\x18GetConfigurationsRequest\"\x8e\x02\n" +
-	"\x19GetConfigurationsResponse\x12!\n" +
-	"\fcluster_name\x18\x01 \x01(\tR\vclusterName\x12u\n" +
-	"\rconfig_values\x18\x02 \x03(\v2P.temporal.server.api.adminservice.v1.GetConfigurationsResponse.ConfigValuesEntryR\fconfigValues\x1aW\n" +
-	"\x11ConfigValuesEntry\x12\x10\n" +
-	"\x03key\x18\x01 \x01(\tR\x03key\x12,\n" +
-	"\x05value\x18\x02 \x01(\v2\x16.google.protobuf.ValueR\x05value:\x028\x01B8Z6go.temporal.io/server/api/adminservice/v1;adminserviceb\x06proto3"
+	"was_loaded\x18\x01 \x01(\bR\twasLoaded\"o\n" +
+	"\n" +
+	"HostConfig\x12\x1a\n" +
+	"\bhostname\x18\x01 \x01(\tR\bhostname\x12E\n" +
+	"\x12raw_dynamic_config\x18\x02 \x01(\v2\x17.google.protobuf.StructR\x10rawDynamicConfig\"Q\n" +
+	"\x1fGetDynamicConfigurationsRequest\x12\x10\n" +
+	"\x03key\x18\x01 \x01(\tR\x03key\x12\x1c\n" +
+	"\tnamespace\x18\x02 \x01(\tR\tnamespace\"t\n" +
+	" GetDynamicConfigurationsResponse\x12P\n" +
+	"\vhost_config\x18\x01 \x03(\v2/.temporal.server.api.adminservice.v1.HostConfigR\n" +
+	"hostConfigB8Z6go.temporal.io/server/api/adminservice/v1;adminserviceb\x06proto3"
 
 var (
 	file_temporal_server_api_adminservice_v1_request_response_proto_rawDescOnce sync.Once
@@ -5950,19 +6015,19 @@ var file_temporal_server_api_adminservice_v1_request_response_proto_goTypes = []
 	(*DescribeTaskQueuePartitionResponse)(nil),          // 86: temporal.server.api.adminservice.v1.DescribeTaskQueuePartitionResponse
 	(*ForceUnloadTaskQueuePartitionRequest)(nil),        // 87: temporal.server.api.adminservice.v1.ForceUnloadTaskQueuePartitionRequest
 	(*ForceUnloadTaskQueuePartitionResponse)(nil),       // 88: temporal.server.api.adminservice.v1.ForceUnloadTaskQueuePartitionResponse
-	(*GetConfigurationsRequest)(nil),                    // 89: temporal.server.api.adminservice.v1.GetConfigurationsRequest
-	(*GetConfigurationsResponse)(nil),                   // 90: temporal.server.api.adminservice.v1.GetConfigurationsResponse
-	nil,                                                 // 91: temporal.server.api.adminservice.v1.GetReplicationMessagesResponse.ShardMessagesEntry
-	nil,                                                 // 92: temporal.server.api.adminservice.v1.AddSearchAttributesRequest.SearchAttributesEntry
-	nil,                                                 // 93: temporal.server.api.adminservice.v1.GetSearchAttributesResponse.CustomAttributesEntry
-	nil,                                                 // 94: temporal.server.api.adminservice.v1.GetSearchAttributesResponse.SystemAttributesEntry
-	nil,                                                 // 95: temporal.server.api.adminservice.v1.GetSearchAttributesResponse.MappingEntry
-	nil,                                                 // 96: temporal.server.api.adminservice.v1.DescribeClusterResponse.SupportedClientsEntry
-	nil,                                                 // 97: temporal.server.api.adminservice.v1.DescribeClusterResponse.TagsEntry
-	(*AddTasksRequest_Task)(nil),                        // 98: temporal.server.api.adminservice.v1.AddTasksRequest.Task
-	(*ListQueuesResponse_QueueInfo)(nil),                // 99: temporal.server.api.adminservice.v1.ListQueuesResponse.QueueInfo
-	nil,                                                 // 100: temporal.server.api.adminservice.v1.DescribeTaskQueuePartitionResponse.VersionsInfoInternalEntry
-	nil,                                                 // 101: temporal.server.api.adminservice.v1.GetConfigurationsResponse.ConfigValuesEntry
+	(*HostConfig)(nil),                                  // 89: temporal.server.api.adminservice.v1.HostConfig
+	(*GetDynamicConfigurationsRequest)(nil),             // 90: temporal.server.api.adminservice.v1.GetDynamicConfigurationsRequest
+	(*GetDynamicConfigurationsResponse)(nil),            // 91: temporal.server.api.adminservice.v1.GetDynamicConfigurationsResponse
+	nil,                                                 // 92: temporal.server.api.adminservice.v1.GetReplicationMessagesResponse.ShardMessagesEntry
+	nil,                                                 // 93: temporal.server.api.adminservice.v1.AddSearchAttributesRequest.SearchAttributesEntry
+	nil,                                                 // 94: temporal.server.api.adminservice.v1.GetSearchAttributesResponse.CustomAttributesEntry
+	nil,                                                 // 95: temporal.server.api.adminservice.v1.GetSearchAttributesResponse.SystemAttributesEntry
+	nil,                                                 // 96: temporal.server.api.adminservice.v1.GetSearchAttributesResponse.MappingEntry
+	nil,                                                 // 97: temporal.server.api.adminservice.v1.DescribeClusterResponse.SupportedClientsEntry
+	nil,                                                 // 98: temporal.server.api.adminservice.v1.DescribeClusterResponse.TagsEntry
+	(*AddTasksRequest_Task)(nil),                        // 99: temporal.server.api.adminservice.v1.AddTasksRequest.Task
+	(*ListQueuesResponse_QueueInfo)(nil),                // 100: temporal.server.api.adminservice.v1.ListQueuesResponse.QueueInfo
+	nil,                                                 // 101: temporal.server.api.adminservice.v1.DescribeTaskQueuePartitionResponse.VersionsInfoInternalEntry
 	(*v1.WorkflowExecution)(nil),                        // 102: temporal.api.common.v1.WorkflowExecution
 	(*v1.DataBlob)(nil),                                 // 103: temporal.api.common.v1.DataBlob
 	(*v11.VersionHistory)(nil),                          // 104: temporal.server.api.history.v1.VersionHistory
@@ -6004,9 +6069,9 @@ var file_temporal_server_api_adminservice_v1_request_response_proto_goTypes = []
 	(*v113.TaskQueuePartition)(nil),                     // 140: temporal.server.api.taskqueue.v1.TaskQueuePartition
 	(*v114.TaskQueueVersionSelection)(nil),              // 141: temporal.api.taskqueue.v1.TaskQueueVersionSelection
 	(*v114.TaskIdBlock)(nil),                            // 142: temporal.api.taskqueue.v1.TaskIdBlock
-	(v16.IndexedValueType)(0),                           // 143: temporal.api.enums.v1.IndexedValueType
-	(*v113.TaskQueueVersionInfoInternal)(nil),           // 144: temporal.server.api.taskqueue.v1.TaskQueueVersionInfoInternal
-	(*structpb.Value)(nil),                              // 145: google.protobuf.Value
+	(*structpb.Struct)(nil),                             // 143: google.protobuf.Struct
+	(v16.IndexedValueType)(0),                           // 144: temporal.api.enums.v1.IndexedValueType
+	(*v113.TaskQueueVersionInfoInternal)(nil),           // 145: temporal.server.api.taskqueue.v1.TaskQueueVersionInfoInternal
 }
 var file_temporal_server_api_adminservice_v1_request_response_proto_depIdxs = []int32{
 	102, // 0: temporal.server.api.adminservice.v1.RebuildMutableStateRequest.execution:type_name -> temporal.api.common.v1.WorkflowExecution
@@ -6031,21 +6096,21 @@ var file_temporal_server_api_adminservice_v1_request_response_proto_depIdxs = []
 	103, // 19: temporal.server.api.adminservice.v1.GetWorkflowExecutionRawHistoryResponse.history_batches:type_name -> temporal.api.common.v1.DataBlob
 	104, // 20: temporal.server.api.adminservice.v1.GetWorkflowExecutionRawHistoryResponse.version_history:type_name -> temporal.server.api.history.v1.VersionHistory
 	111, // 21: temporal.server.api.adminservice.v1.GetReplicationMessagesRequest.tokens:type_name -> temporal.server.api.replication.v1.ReplicationToken
-	91,  // 22: temporal.server.api.adminservice.v1.GetReplicationMessagesResponse.shard_messages:type_name -> temporal.server.api.adminservice.v1.GetReplicationMessagesResponse.ShardMessagesEntry
+	92,  // 22: temporal.server.api.adminservice.v1.GetReplicationMessagesResponse.shard_messages:type_name -> temporal.server.api.adminservice.v1.GetReplicationMessagesResponse.ShardMessagesEntry
 	112, // 23: temporal.server.api.adminservice.v1.GetNamespaceReplicationMessagesResponse.messages:type_name -> temporal.server.api.replication.v1.ReplicationMessages
 	113, // 24: temporal.server.api.adminservice.v1.GetDLQReplicationMessagesRequest.task_infos:type_name -> temporal.server.api.replication.v1.ReplicationTaskInfo
 	114, // 25: temporal.server.api.adminservice.v1.GetDLQReplicationMessagesResponse.replication_tasks:type_name -> temporal.server.api.replication.v1.ReplicationTask
 	102, // 26: temporal.server.api.adminservice.v1.ReapplyEventsRequest.workflow_execution:type_name -> temporal.api.common.v1.WorkflowExecution
 	103, // 27: temporal.server.api.adminservice.v1.ReapplyEventsRequest.events:type_name -> temporal.api.common.v1.DataBlob
-	92,  // 28: temporal.server.api.adminservice.v1.AddSearchAttributesRequest.search_attributes:type_name -> temporal.server.api.adminservice.v1.AddSearchAttributesRequest.SearchAttributesEntry
-	93,  // 29: temporal.server.api.adminservice.v1.GetSearchAttributesResponse.custom_attributes:type_name -> temporal.server.api.adminservice.v1.GetSearchAttributesResponse.CustomAttributesEntry
-	94,  // 30: temporal.server.api.adminservice.v1.GetSearchAttributesResponse.system_attributes:type_name -> temporal.server.api.adminservice.v1.GetSearchAttributesResponse.SystemAttributesEntry
-	95,  // 31: temporal.server.api.adminservice.v1.GetSearchAttributesResponse.mapping:type_name -> temporal.server.api.adminservice.v1.GetSearchAttributesResponse.MappingEntry
+	93,  // 28: temporal.server.api.adminservice.v1.AddSearchAttributesRequest.search_attributes:type_name -> temporal.server.api.adminservice.v1.AddSearchAttributesRequest.SearchAttributesEntry
+	94,  // 29: temporal.server.api.adminservice.v1.GetSearchAttributesResponse.custom_attributes:type_name -> temporal.server.api.adminservice.v1.GetSearchAttributesResponse.CustomAttributesEntry
+	95,  // 30: temporal.server.api.adminservice.v1.GetSearchAttributesResponse.system_attributes:type_name -> temporal.server.api.adminservice.v1.GetSearchAttributesResponse.SystemAttributesEntry
+	96,  // 31: temporal.server.api.adminservice.v1.GetSearchAttributesResponse.mapping:type_name -> temporal.server.api.adminservice.v1.GetSearchAttributesResponse.MappingEntry
 	115, // 32: temporal.server.api.adminservice.v1.GetSearchAttributesResponse.add_workflow_execution_info:type_name -> temporal.api.workflow.v1.WorkflowExecutionInfo
-	96,  // 33: temporal.server.api.adminservice.v1.DescribeClusterResponse.supported_clients:type_name -> temporal.server.api.adminservice.v1.DescribeClusterResponse.SupportedClientsEntry
+	97,  // 33: temporal.server.api.adminservice.v1.DescribeClusterResponse.supported_clients:type_name -> temporal.server.api.adminservice.v1.DescribeClusterResponse.SupportedClientsEntry
 	116, // 34: temporal.server.api.adminservice.v1.DescribeClusterResponse.membership_info:type_name -> temporal.server.api.cluster.v1.MembershipInfo
 	117, // 35: temporal.server.api.adminservice.v1.DescribeClusterResponse.version_info:type_name -> temporal.api.version.v1.VersionInfo
-	97,  // 36: temporal.server.api.adminservice.v1.DescribeClusterResponse.tags:type_name -> temporal.server.api.adminservice.v1.DescribeClusterResponse.TagsEntry
+	98,  // 36: temporal.server.api.adminservice.v1.DescribeClusterResponse.tags:type_name -> temporal.server.api.adminservice.v1.DescribeClusterResponse.TagsEntry
 	118, // 37: temporal.server.api.adminservice.v1.ListClustersResponse.clusters:type_name -> temporal.server.api.persistence.v1.ClusterMetadata
 	119, // 38: temporal.server.api.adminservice.v1.ListClusterMembersRequest.last_heartbeat_within:type_name -> google.protobuf.Duration
 	120, // 39: temporal.server.api.adminservice.v1.ListClusterMembersRequest.role:type_name -> temporal.server.api.enums.v1.ClusterMemberRole
@@ -6078,8 +6143,8 @@ var file_temporal_server_api_adminservice_v1_request_response_proto_depIdxs = []
 	135, // 66: temporal.server.api.adminservice.v1.DescribeDLQJobResponse.operation_state:type_name -> temporal.server.api.enums.v1.DLQOperationState
 	110, // 67: temporal.server.api.adminservice.v1.DescribeDLQJobResponse.start_time:type_name -> google.protobuf.Timestamp
 	110, // 68: temporal.server.api.adminservice.v1.DescribeDLQJobResponse.end_time:type_name -> google.protobuf.Timestamp
-	98,  // 69: temporal.server.api.adminservice.v1.AddTasksRequest.tasks:type_name -> temporal.server.api.adminservice.v1.AddTasksRequest.Task
-	99,  // 70: temporal.server.api.adminservice.v1.ListQueuesResponse.queues:type_name -> temporal.server.api.adminservice.v1.ListQueuesResponse.QueueInfo
+	99,  // 69: temporal.server.api.adminservice.v1.AddTasksRequest.tasks:type_name -> temporal.server.api.adminservice.v1.AddTasksRequest.Task
+	100, // 70: temporal.server.api.adminservice.v1.ListQueuesResponse.queues:type_name -> temporal.server.api.adminservice.v1.ListQueuesResponse.QueueInfo
 	136, // 71: temporal.server.api.adminservice.v1.DeepHealthCheckResponse.state:type_name -> temporal.server.api.enums.v1.HealthState
 	102, // 72: temporal.server.api.adminservice.v1.SyncWorkflowStateRequest.execution:type_name -> temporal.api.common.v1.WorkflowExecution
 	137, // 73: temporal.server.api.adminservice.v1.SyncWorkflowStateRequest.versioned_transition:type_name -> temporal.server.api.persistence.v1.VersionedTransition
@@ -6089,16 +6154,16 @@ var file_temporal_server_api_adminservice_v1_request_response_proto_depIdxs = []
 	140, // 77: temporal.server.api.adminservice.v1.DescribeTaskQueuePartitionRequest.task_queue_partition:type_name -> temporal.server.api.taskqueue.v1.TaskQueuePartition
 	141, // 78: temporal.server.api.adminservice.v1.DescribeTaskQueuePartitionRequest.build_ids:type_name -> temporal.api.taskqueue.v1.TaskQueueVersionSelection
 	142, // 79: temporal.server.api.adminservice.v1.InternalTaskQueueStatus.task_id_block:type_name -> temporal.api.taskqueue.v1.TaskIdBlock
-	100, // 80: temporal.server.api.adminservice.v1.DescribeTaskQueuePartitionResponse.versions_info_internal:type_name -> temporal.server.api.adminservice.v1.DescribeTaskQueuePartitionResponse.VersionsInfoInternalEntry
+	101, // 80: temporal.server.api.adminservice.v1.DescribeTaskQueuePartitionResponse.versions_info_internal:type_name -> temporal.server.api.adminservice.v1.DescribeTaskQueuePartitionResponse.VersionsInfoInternalEntry
 	140, // 81: temporal.server.api.adminservice.v1.ForceUnloadTaskQueuePartitionRequest.task_queue_partition:type_name -> temporal.server.api.taskqueue.v1.TaskQueuePartition
-	101, // 82: temporal.server.api.adminservice.v1.GetConfigurationsResponse.config_values:type_name -> temporal.server.api.adminservice.v1.GetConfigurationsResponse.ConfigValuesEntry
-	112, // 83: temporal.server.api.adminservice.v1.GetReplicationMessagesResponse.ShardMessagesEntry.value:type_name -> temporal.server.api.replication.v1.ReplicationMessages
-	143, // 84: temporal.server.api.adminservice.v1.AddSearchAttributesRequest.SearchAttributesEntry.value:type_name -> temporal.api.enums.v1.IndexedValueType
-	143, // 85: temporal.server.api.adminservice.v1.GetSearchAttributesResponse.CustomAttributesEntry.value:type_name -> temporal.api.enums.v1.IndexedValueType
-	143, // 86: temporal.server.api.adminservice.v1.GetSearchAttributesResponse.SystemAttributesEntry.value:type_name -> temporal.api.enums.v1.IndexedValueType
-	103, // 87: temporal.server.api.adminservice.v1.AddTasksRequest.Task.blob:type_name -> temporal.api.common.v1.DataBlob
-	144, // 88: temporal.server.api.adminservice.v1.DescribeTaskQueuePartitionResponse.VersionsInfoInternalEntry.value:type_name -> temporal.server.api.taskqueue.v1.TaskQueueVersionInfoInternal
-	145, // 89: temporal.server.api.adminservice.v1.GetConfigurationsResponse.ConfigValuesEntry.value:type_name -> google.protobuf.Value
+	143, // 82: temporal.server.api.adminservice.v1.HostConfig.raw_dynamic_config:type_name -> google.protobuf.Struct
+	89,  // 83: temporal.server.api.adminservice.v1.GetDynamicConfigurationsResponse.host_config:type_name -> temporal.server.api.adminservice.v1.HostConfig
+	112, // 84: temporal.server.api.adminservice.v1.GetReplicationMessagesResponse.ShardMessagesEntry.value:type_name -> temporal.server.api.replication.v1.ReplicationMessages
+	144, // 85: temporal.server.api.adminservice.v1.AddSearchAttributesRequest.SearchAttributesEntry.value:type_name -> temporal.api.enums.v1.IndexedValueType
+	144, // 86: temporal.server.api.adminservice.v1.GetSearchAttributesResponse.CustomAttributesEntry.value:type_name -> temporal.api.enums.v1.IndexedValueType
+	144, // 87: temporal.server.api.adminservice.v1.GetSearchAttributesResponse.SystemAttributesEntry.value:type_name -> temporal.api.enums.v1.IndexedValueType
+	103, // 88: temporal.server.api.adminservice.v1.AddTasksRequest.Task.blob:type_name -> temporal.api.common.v1.DataBlob
+	145, // 89: temporal.server.api.adminservice.v1.DescribeTaskQueuePartitionResponse.VersionsInfoInternalEntry.value:type_name -> temporal.server.api.taskqueue.v1.TaskQueueVersionInfoInternal
 	90,  // [90:90] is the sub-list for method output_type
 	90,  // [90:90] is the sub-list for method input_type
 	90,  // [90:90] is the sub-list for extension type_name

@@ -162,5 +162,5 @@ service AdminService {
 
     rpc ForceUnloadTaskQueuePartition (ForceUnloadTaskQueuePartitionRequest) returns (ForceUnloadTaskQueuePartitionResponse) {}
 
-    rpc GetConfigurations(GetConfigurationsRequest) returns (GetConfigurationsResponse) {}
+    rpc GetDynamicConfigurations(GetDynamicConfigurationsRequest) returns (GetDynamicConfigurationsResponse) {}
 }

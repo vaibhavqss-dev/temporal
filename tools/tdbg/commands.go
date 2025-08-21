@@ -727,12 +727,16 @@ func AdminGetClusterConfig(c *cli.Context, clientFactory ClientFactory) error {
 	adminClient := clientFactory.AdminClient(c)
 	ctx, cancel := newContext(c)
 	defer cancel()
-
-	resp, err := adminClient.GetConfigurations(ctx, &adminservice.GetConfigurationsRequest{})	
+	nsName := c.String(FlagNamespace)
+	key := c.String(FlagKey)
+	
+	resp, err := adminClient.GetDynamicConfigurations(ctx, &adminservice.GetDynamicConfigurationsRequest{
+		Namespace: nsName,
+		Key: key,
+	})
 	if err != nil {
 		return fmt.Errorf("error getting cluster config: %s", err)
 	}
-
 	prettyPrintJSONObject(c, resp)
 	return nil
 }

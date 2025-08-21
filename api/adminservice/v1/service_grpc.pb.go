@@ -63,7 +63,7 @@ const (
 	AdminService_GenerateLastHistoryReplicationTasks_FullMethodName = "/temporal.server.api.adminservice.v1.AdminService/GenerateLastHistoryReplicationTasks"
 	AdminService_DescribeTaskQueuePartition_FullMethodName          = "/temporal.server.api.adminservice.v1.AdminService/DescribeTaskQueuePartition"
 	AdminService_ForceUnloadTaskQueuePartition_FullMethodName       = "/temporal.server.api.adminservice.v1.AdminService/ForceUnloadTaskQueuePartition"
-	AdminService_GetConfigurations_FullMethodName                   = "/temporal.server.api.adminservice.v1.AdminService/GetConfigurations"
+	AdminService_GetDynamicConfigurations_FullMethodName            = "/temporal.server.api.adminservice.v1.AdminService/GetDynamicConfigurations"
 )
 
 // AdminServiceClient is the client API for AdminService service.
@@ -154,7 +154,7 @@ type AdminServiceClient interface {
 	GenerateLastHistoryReplicationTasks(ctx context.Context, in *GenerateLastHistoryReplicationTasksRequest, opts ...grpc.CallOption) (*GenerateLastHistoryReplicationTasksResponse, error)
 	DescribeTaskQueuePartition(ctx context.Context, in *DescribeTaskQueuePartitionRequest, opts ...grpc.CallOption) (*DescribeTaskQueuePartitionResponse, error)
 	ForceUnloadTaskQueuePartition(ctx context.Context, in *ForceUnloadTaskQueuePartitionRequest, opts ...grpc.CallOption) (*ForceUnloadTaskQueuePartitionResponse, error)
-	GetConfigurations(ctx context.Context, in *GetConfigurationsRequest, opts ...grpc.CallOption) (*GetConfigurationsResponse, error)
+	GetDynamicConfigurations(ctx context.Context, in *GetDynamicConfigurationsRequest, opts ...grpc.CallOption) (*GetDynamicConfigurationsResponse, error)
 }
 
 type adminServiceClient struct {
@@ -574,9 +574,9 @@ func (c *adminServiceClient) ForceUnloadTaskQueuePartition(ctx context.Context, 
 	return out, nil
 }
 
-func (c *adminServiceClient) GetConfigurations(ctx context.Context, in *GetConfigurationsRequest, opts ...grpc.CallOption) (*GetConfigurationsResponse, error) {
-	out := new(GetConfigurationsResponse)
-	err := c.cc.Invoke(ctx, AdminService_GetConfigurations_FullMethodName, in, out, opts...)
+func (c *adminServiceClient) GetDynamicConfigurations(ctx context.Context, in *GetDynamicConfigurationsRequest, opts ...grpc.CallOption) (*GetDynamicConfigurationsResponse, error) {
+	out := new(GetDynamicConfigurationsResponse)
+	err := c.cc.Invoke(ctx, AdminService_GetDynamicConfigurations_FullMethodName, in, out, opts...)
 	if err != nil {
 		return nil, err
 	}
@@ -671,7 +671,7 @@ type AdminServiceServer interface {
 	GenerateLastHistoryReplicationTasks(context.Context, *GenerateLastHistoryReplicationTasksRequest) (*GenerateLastHistoryReplicationTasksResponse, error)
 	DescribeTaskQueuePartition(context.Context, *DescribeTaskQueuePartitionRequest) (*DescribeTaskQueuePartitionResponse, error)
 	ForceUnloadTaskQueuePartition(context.Context, *ForceUnloadTaskQueuePartitionRequest) (*ForceUnloadTaskQueuePartitionResponse, error)
-	GetConfigurations(context.Context, *GetConfigurationsRequest) (*GetConfigurationsResponse, error)
+	GetDynamicConfigurations(context.Context, *GetDynamicConfigurationsRequest) (*GetDynamicConfigurationsResponse, error)
 	mustEmbedUnimplementedAdminServiceServer()
 }
 
@@ -808,8 +808,8 @@ func (UnimplementedAdminServiceServer) DescribeTaskQueuePartition(context.Contex
 func (UnimplementedAdminServiceServer) ForceUnloadTaskQueuePartition(context.Context, *ForceUnloadTaskQueuePartitionRequest) (*ForceUnloadTaskQueuePartitionResponse, error) {
 	return nil, status.Errorf(codes.Unimplemented, "method ForceUnloadTaskQueuePartition not implemented")
 }
-func (UnimplementedAdminServiceServer) GetConfigurations(context.Context, *GetConfigurationsRequest) (*GetConfigurationsResponse, error) {
-	return nil, status.Errorf(codes.Unimplemented, "method GetConfigurations not implemented")
+func (UnimplementedAdminServiceServer) GetDynamicConfigurations(context.Context, *GetDynamicConfigurationsRequest) (*GetDynamicConfigurationsResponse, error) {
+	return nil, status.Errorf(codes.Unimplemented, "method GetDynamicConfigurations not implemented")
 }
 func (UnimplementedAdminServiceServer) mustEmbedUnimplementedAdminServiceServer() {}
 
@@ -1606,20 +1606,20 @@ func _AdminService_ForceUnloadTaskQueuePartition_Handler(srv interface{}, ctx co
 	return interceptor(ctx, in, info, handler)
 }
 
-func _AdminService_GetConfigurations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
-	in := new(GetConfigurationsRequest)
+func _AdminService_GetDynamicConfigurations_Handler(srv interface{}, ctx context.Context, dec func(interface{}) error, interceptor grpc.UnaryServerInterceptor) (interface{}, error) {
+	in := new(GetDynamicConfigurationsRequest)
 	if err := dec(in); err != nil {
 		return nil, err
 	}
 	if interceptor == nil {
-		return srv.(AdminServiceServer).GetConfigurations(ctx, in)
+		return srv.(AdminServiceServer).GetDynamicConfigurations(ctx, in)
 	}
 	info := &grpc.UnaryServerInfo{
 		Server:     srv,
-		FullMethod: AdminService_GetConfigurations_FullMethodName,
+		FullMethod: AdminService_GetDynamicConfigurations_FullMethodName,
 	}
 	handler := func(ctx context.Context, req interface{}) (interface{}, error) {
-		return srv.(AdminServiceServer).GetConfigurations(ctx, req.(*GetConfigurationsRequest))
+		return srv.(AdminServiceServer).GetDynamicConfigurations(ctx, req.(*GetDynamicConfigurationsRequest))
 	}
 	return interceptor(ctx, in, info, handler)
 }
@@ -1800,8 +1800,8 @@ var AdminService_ServiceDesc = grpc.ServiceDesc{
 			Handler:    _AdminService_ForceUnloadTaskQueuePartition_Handler,
 		},
 		{
-			MethodName: "GetConfigurations",
-			Handler:    _AdminService_GetConfigurations_Handler,
+			MethodName: "GetDynamicConfigurations",
+			Handler:    _AdminService_GetDynamicConfigurations_Handler,
 		},
 	},
 	Streams: []grpc.StreamDesc{

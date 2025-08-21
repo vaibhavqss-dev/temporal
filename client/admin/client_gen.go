@@ -149,16 +149,6 @@ func (c *clientImpl) GenerateLastHistoryReplicationTasks(
 	return c.client.GenerateLastHistoryReplicationTasks(ctx, request, opts...)
 }
 
-func (c *clientImpl) GetConfigurations(
-	ctx context.Context,
-	request *adminservice.GetConfigurationsRequest,
-	opts ...grpc.CallOption,
-) (*adminservice.GetConfigurationsResponse, error) {
-	ctx, cancel := c.createContext(ctx)
-	defer cancel()
-	return c.client.GetConfigurations(ctx, request, opts...)
-}
-
 func (c *clientImpl) GetDLQMessages(
 	ctx context.Context,
 	request *adminservice.GetDLQMessagesRequest,
@@ -187,6 +177,16 @@ func (c *clientImpl) GetDLQTasks(
 	ctx, cancel := c.createContext(ctx)
 	defer cancel()
 	return c.client.GetDLQTasks(ctx, request, opts...)
+}
+
+func (c *clientImpl) GetDynamicConfigurations(
+	ctx context.Context,
+	request *adminservice.GetDynamicConfigurationsRequest,
+	opts ...grpc.CallOption,
+) (*adminservice.GetDynamicConfigurationsResponse, error) {
+	ctx, cancel := c.createContext(ctx)
+	defer cancel()
+	return c.client.GetDynamicConfigurations(ctx, request, opts...)
 }
 
 func (c *clientImpl) GetNamespace(

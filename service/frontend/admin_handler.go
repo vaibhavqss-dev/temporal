@@ -2182,21 +2182,19 @@ func (adh *AdminHandler) getDLQWorkflowID(
 	)
 }
 
-
-
-func (adh *AdminHandler) GetConfigurations(
+func (adh *AdminHandler) GetDynamicConfigurations(
 	ctx context.Context,
-	req *adminservice.GetConfigurationsRequest,
-) (*adminservice.GetConfigurationsResponse, error) {
+	req *adminservice.GetDynamicConfigurationsRequest,
+) (*adminservice.GetDynamicConfigurationsResponse, error) {
+	// key := req.GetKey()
+	namespace := req.GetNamespace()
+	
 	cfgVal := reflect.ValueOf(adh.config)
 	if cfgVal.Kind() == reflect.Ptr {
 		cfgVal = cfgVal.Elem()
 	}
 	cfgType := cfgVal.Type()
-	entries := &adminservice.GetConfigurationsResponse{
-		ClusterName:  adh.clusterMetadata.GetCurrentClusterName(),
-		ConfigValues: make(map[string]*structpb.Value, cfgVal.NumField()),
-	}
+	fields := make(map[string]*structpb.Value, cfgVal.NumField())
 
 	for i := 0; i < cfgVal.NumField(); i++ {
 		field := cfgType.Field(i)
@@ -2204,44 +2202,41 @@ func (adh *AdminHandler) GetConfigurations(
 
 		var raw interface{}
 		if v.Kind() == reflect.Func {
-			// only call functions with allowed signatures:
-			// - func() T
-			// - func(string) T  (namespace-filter style) -> call with empty string
 			ft := v.Type()
 			if ft.NumOut() == 1 {
 				if ft.NumIn() == 0 {
-					// call zero-arg
 					defer func() { _ = recover() }()
 					out := v.Call(nil)
 					if len(out) == 1 {
 						raw = out[0].Interface()
 					}
 				} else if ft.NumIn() == 1 && ft.In(0).Kind() == reflect.String {
-					// call with empty namespace to get "global/default" value
 					defer func() { _ = recover() }()
-					out := v.Call([]reflect.Value{reflect.ValueOf("")})
+					out := v.Call([]reflect.Value{reflect.ValueOf(namespace)})
 					if len(out) == 1 {
 						raw = out[0].Interface()
 					}
 				} else {
-					// unsupported function signature -> skip
 					continue
 				}
 			} else {
-				// unsupported function outputs -> skip
 				continue
 			}
 		} else {
-			// not a function, get concrete value
 			raw = v.Interface()
 		}
-
-		// convert raw value into *structpb.Value
 		pbVal := toPBValue(raw)
-		entries.ConfigValues[field.Name] = pbVal
+		fields[field.Name] = pbVal
 	}
-
-	return entries, nil
+	pbStruct := &structpb.Struct{Fields: fields}
+	hostCfg := &adminservice.HostConfig{
+		Hostname:         adh.clusterMetadata.GetCurrentClusterName(),
+		RawDynamicConfig: pbStruct,
+	}
+	resp := &adminservice.GetDynamicConfigurationsResponse{
+		HostConfig: []*adminservice.HostConfig{hostCfg},
+	}
+	return resp, nil
 }
 
 func toPBValue(val interface{}) *structpb.Value {
@@ -2274,24 +2269,18 @@ func toPBValue(val interface{}) *structpb.Value {
 	if re2, ok := val.(regexp.Regexp); ok {
 		return structpb.NewStringValue(re2.String())
 	}
-	// dynamicconfig.GlobalCachedTypedValue[*T] patterns:
-	// try common cases by reflection to call Get() method if present
 	rv := reflect.ValueOf(val)
 	if rv.IsValid() && rv.Kind() == reflect.Ptr {
-		// if pointer has method Get() with zero args and one return -> call it
 		if m := rv.MethodByName("Get"); m.IsValid() {
 			if m.Type().NumIn() == 0 && m.Type().NumOut() == 1 {
 				defer func() {
 					_ = recover() // be defensive
 				}()
 				out := m.Call(nil)[0].Interface()
-				// recurse to convert
 				return toPBValue(out)
 			}
 		}
 	}
-
-	// For complex structs, marshal -> unmarshal into interface{} then structpb.NewValue
 	{
 		bs, err := json.Marshal(val)
 		if err == nil {

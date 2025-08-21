@@ -323,26 +323,6 @@ func (mr *MockAdminServiceClientMockRecorder) GenerateLastHistoryReplicationTask
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateLastHistoryReplicationTasks", reflect.TypeOf((*MockAdminServiceClient)(nil).GenerateLastHistoryReplicationTasks), varargs...)
 }
 
-// GetConfigurations mocks base method.
-func (m *MockAdminServiceClient) GetConfigurations(ctx context.Context, in *adminservice.GetConfigurationsRequest, opts ...grpc.CallOption) (*adminservice.GetConfigurationsResponse, error) {
-	m.ctrl.T.Helper()
-	varargs := []any{ctx, in}
-	for _, a := range opts {
-		varargs = append(varargs, a)
-	}
-	ret := m.ctrl.Call(m, "GetConfigurations", varargs...)
-	ret0, _ := ret[0].(*adminservice.GetConfigurationsResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetConfigurations indicates an expected call of GetConfigurations.
-func (mr *MockAdminServiceClientMockRecorder) GetConfigurations(ctx, in any, opts ...any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	varargs := append([]any{ctx, in}, opts...)
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfigurations", reflect.TypeOf((*MockAdminServiceClient)(nil).GetConfigurations), varargs...)
-}
-
 // GetDLQMessages mocks base method.
 func (m *MockAdminServiceClient) GetDLQMessages(ctx context.Context, in *adminservice.GetDLQMessagesRequest, opts ...grpc.CallOption) (*adminservice.GetDLQMessagesResponse, error) {
 	m.ctrl.T.Helper()
@@ -401,6 +381,26 @@ func (mr *MockAdminServiceClientMockRecorder) GetDLQTasks(ctx, in any, opts ...a
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{ctx, in}, opts...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDLQTasks", reflect.TypeOf((*MockAdminServiceClient)(nil).GetDLQTasks), varargs...)
+}
+
+// GetDynamicConfigurations mocks base method.
+func (m *MockAdminServiceClient) GetDynamicConfigurations(ctx context.Context, in *adminservice.GetDynamicConfigurationsRequest, opts ...grpc.CallOption) (*adminservice.GetDynamicConfigurationsResponse, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{ctx, in}
+	for _, a := range opts {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "GetDynamicConfigurations", varargs...)
+	ret0, _ := ret[0].(*adminservice.GetDynamicConfigurationsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDynamicConfigurations indicates an expected call of GetDynamicConfigurations.
+func (mr *MockAdminServiceClientMockRecorder) GetDynamicConfigurations(ctx, in any, opts ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{ctx, in}, opts...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDynamicConfigurations", reflect.TypeOf((*MockAdminServiceClient)(nil).GetDynamicConfigurations), varargs...)
 }
 
 // GetNamespace mocks base method.
@@ -1295,21 +1295,6 @@ func (mr *MockAdminServiceServerMockRecorder) GenerateLastHistoryReplicationTask
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GenerateLastHistoryReplicationTasks", reflect.TypeOf((*MockAdminServiceServer)(nil).GenerateLastHistoryReplicationTasks), arg0, arg1)
 }
 
-// GetConfigurations mocks base method.
-func (m *MockAdminServiceServer) GetConfigurations(arg0 context.Context, arg1 *adminservice.GetConfigurationsRequest) (*adminservice.GetConfigurationsResponse, error) {
-	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "GetConfigurations", arg0, arg1)
-	ret0, _ := ret[0].(*adminservice.GetConfigurationsResponse)
-	ret1, _ := ret[1].(error)
-	return ret0, ret1
-}
-
-// GetConfigurations indicates an expected call of GetConfigurations.
-func (mr *MockAdminServiceServerMockRecorder) GetConfigurations(arg0, arg1 any) *gomock.Call {
-	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetConfigurations", reflect.TypeOf((*MockAdminServiceServer)(nil).GetConfigurations), arg0, arg1)
-}
-
 // GetDLQMessages mocks base method.
 func (m *MockAdminServiceServer) GetDLQMessages(arg0 context.Context, arg1 *adminservice.GetDLQMessagesRequest) (*adminservice.GetDLQMessagesResponse, error) {
 	m.ctrl.T.Helper()
@@ -1353,6 +1338,21 @@ func (m *MockAdminServiceServer) GetDLQTasks(arg0 context.Context, arg1 *adminse
 func (mr *MockAdminServiceServerMockRecorder) GetDLQTasks(arg0, arg1 any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDLQTasks", reflect.TypeOf((*MockAdminServiceServer)(nil).GetDLQTasks), arg0, arg1)
+}
+
+// GetDynamicConfigurations mocks base method.
+func (m *MockAdminServiceServer) GetDynamicConfigurations(arg0 context.Context, arg1 *adminservice.GetDynamicConfigurationsRequest) (*adminservice.GetDynamicConfigurationsResponse, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDynamicConfigurations", arg0, arg1)
+	ret0, _ := ret[0].(*adminservice.GetDynamicConfigurationsResponse)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDynamicConfigurations indicates an expected call of GetDynamicConfigurations.
+func (mr *MockAdminServiceServerMockRecorder) GetDynamicConfigurations(arg0, arg1 any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDynamicConfigurations", reflect.TypeOf((*MockAdminServiceServer)(nil).GetDynamicConfigurations), arg0, arg1)
 }
 
 // GetNamespace mocks base method.

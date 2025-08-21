@@ -205,20 +205,6 @@ func (c *metricClient) GenerateLastHistoryReplicationTasks(
 	return c.client.GenerateLastHistoryReplicationTasks(ctx, request, opts...)
 }
 
-func (c *metricClient) GetConfigurations(
-	ctx context.Context,
-	request *adminservice.GetConfigurationsRequest,
-	opts ...grpc.CallOption,
-) (_ *adminservice.GetConfigurationsResponse, retError error) {
-
-	metricsHandler, startTime := c.startMetricsRecording(ctx, "AdminClientGetConfigurations")
-	defer func() {
-		c.finishMetricsRecording(metricsHandler, startTime, retError)
-	}()
-
-	return c.client.GetConfigurations(ctx, request, opts...)
-}
-
 func (c *metricClient) GetDLQMessages(
 	ctx context.Context,
 	request *adminservice.GetDLQMessagesRequest,
@@ -259,6 +245,20 @@ func (c *metricClient) GetDLQTasks(
 	}()
 
 	return c.client.GetDLQTasks(ctx, request, opts...)
+}
+
+func (c *metricClient) GetDynamicConfigurations(
+	ctx context.Context,
+	request *adminservice.GetDynamicConfigurationsRequest,
+	opts ...grpc.CallOption,
+) (_ *adminservice.GetDynamicConfigurationsResponse, retError error) {
+
+	metricsHandler, startTime := c.startMetricsRecording(ctx, "AdminClientGetDynamicConfigurations")
+	defer func() {
+		c.finishMetricsRecording(metricsHandler, startTime, retError)
+	}()
+
+	return c.client.GetDynamicConfigurations(ctx, request, opts...)
 }
 
 func (c *metricClient) GetNamespace(
