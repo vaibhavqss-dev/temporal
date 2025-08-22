@@ -2188,7 +2188,6 @@ func (adh *AdminHandler) GetDynamicConfigurations(
 ) (*adminservice.GetDynamicConfigurationsResponse, error) {
 	// key := req.GetKey()
 	namespace := req.GetNamespace()
-	
 	cfgVal := reflect.ValueOf(adh.config)
 	if cfgVal.Kind() == reflect.Ptr {
 		cfgVal = cfgVal.Elem()
