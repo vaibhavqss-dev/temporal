@@ -2189,20 +2189,32 @@ func (adh *AdminHandler) GetDynamicConfigurations(
 	req *adminservice.GetDynamicConfigurationsRequest,
 ) (*adminservice.GetDynamicConfigurationsResponse, error) {
 	keys := req.GetDynamicConfigKeys()
-	listNamespacesResponse, err := adh.persistenceMetadataManager.ListNamespaces(ctx, &persistence.ListNamespacesRequest{
-		PageSize: 100,
-	})
-	if err != nil {
-		return nil, fmt.Errorf("failed to list namespaces: %w", err)
-	}
+	pageSize := 100;
+	var nextPageToken []byte
 	
-	namespaces := make([]string, 0, len(listNamespacesResponse.Namespaces))
-	for _, namespace := range listNamespacesResponse.Namespaces {
-		namespaces = append(namespaces, namespace.Namespace.Info.Name)
+	namespaces := make([]string, 0)
+	for{
+		listNamespacesResponse, err := adh.persistenceMetadataManager.ListNamespaces(ctx, &persistence.ListNamespacesRequest{
+			PageSize: pageSize,
+			NextPageToken: nextPageToken,
+		})
+		if err != nil {
+			return nil, fmt.Errorf("failed to list namespaces: %w", err)
+		}
+		for _, namespace := range listNamespacesResponse.Namespaces {
+			namespaces = append(namespaces, namespace.Namespace.Info.Name)
+		}
+
+		if(len(listNamespacesResponse.NextPageToken)==0){
+			break;
+		}
+		nextPageToken = listNamespacesResponse.NextPageToken
 	}
+
+	
 	dynamicConfig := make(map[string]*adminservice.ConstrainedValues, len(keys))
 	for _, key := range keys {
-		constrainedValues := adh.getConstrainedValuesForKey(key, namespaces)
+		constrainedValues := adh.getConstrainedValueForKey(key, namespaces)
 		if len(constrainedValues) > 0 {
 			dynamicConfig[key] = &adminservice.ConstrainedValues{
 				Items: constrainedValues,
@@ -2220,48 +2232,7 @@ func (adh *AdminHandler) GetDynamicConfigurations(
 	}, nil
 }
 
-func validateHistoryDLQKey(
-	key *commonspb.HistoryDLQKey,
-) error {
-	if len(key.SourceCluster) == 0 {
-		return errSourceClusterNotSet
-	}
-
-	if len(key.TargetCluster) == 0 {
-		return errTargetClusterNotSet
-	}
-
-	// history service is responsible for validating
-	// categoryID using task category registry
-
-	return nil
-}
-
-func convertClusterReplicationConfigToProto(
-	input []string,
-) []*replicationpb.ClusterReplicationConfig {
-	output := make([]*replicationpb.ClusterReplicationConfig, 0, len(input))
-	for _, clusterName := range input {
-		output = append(output, &replicationpb.ClusterReplicationConfig{ClusterName: clusterName})
-	}
-	return output
-}
-
-func convertFailoverHistoryToReplicationProto(
-	failoverHistoy []*persistencespb.FailoverStatus,
-) []*replicationpb.FailoverStatus {
-	var replicationProto []*replicationpb.FailoverStatus
-	for _, failoverStatus := range failoverHistoy {
-		replicationProto = append(replicationProto, &replicationpb.FailoverStatus{
-			FailoverTime:    failoverStatus.GetFailoverTime(),
-			FailoverVersion: failoverStatus.GetFailoverVersion(),
-		})
-	}
-
-	return replicationProto
-}
-
-func (adh *AdminHandler) getConstrainedValuesForKey(key string, namespaces []string) []*adminservice.ConstrainedValue {
+func (adh *AdminHandler) getConstrainedValueForKey(key string, namespaces []string) []*adminservice.ConstrainedValue {
 	var constrainedValues []*adminservice.ConstrainedValue
 	
 	configValue := reflect.ValueOf(adh.config)
@@ -2344,6 +2315,47 @@ func (adh *AdminHandler) getValueFromField(fieldValue *reflect.Value, namespace 
 	}
 	
 	return nil
+}
+
+func validateHistoryDLQKey(
+	key *commonspb.HistoryDLQKey,
+) error {
+	if len(key.SourceCluster) == 0 {
+		return errSourceClusterNotSet
+	}
+
+	if len(key.TargetCluster) == 0 {
+		return errTargetClusterNotSet
+	}
+
+	// history service is responsible for validating
+	// categoryID using task category registry
+
+	return nil
+}
+
+func convertClusterReplicationConfigToProto(
+	input []string,
+) []*replicationpb.ClusterReplicationConfig {
+	output := make([]*replicationpb.ClusterReplicationConfig, 0, len(input))
+	for _, clusterName := range input {
+		output = append(output, &replicationpb.ClusterReplicationConfig{ClusterName: clusterName})
+	}
+	return output
+}
+
+func convertFailoverHistoryToReplicationProto(
+	failoverHistoy []*persistencespb.FailoverStatus,
+) []*replicationpb.FailoverStatus {
+	var replicationProto []*replicationpb.FailoverStatus
+	for _, failoverStatus := range failoverHistoy {
+		replicationProto = append(replicationProto, &replicationpb.FailoverStatus{
+			FailoverTime:    failoverStatus.GetFailoverTime(),
+			FailoverVersion: failoverStatus.GetFailoverVersion(),
+		})
+	}
+
+	return replicationProto
 }
 
 func toPBValue(val interface{}) *structpb.Value {
