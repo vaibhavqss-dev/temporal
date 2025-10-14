@@ -180,6 +180,7 @@ func (s *adminHandlerSuite) SetupTest() {
 	s.mockVisibilityMgr.EXPECT().GetStoreNames().Return([]string{"mock-vis-store"})
 	s.handler = NewAdminHandler(args)
 	s.handler.Start()
+
 }
 
 func (s *adminHandlerSuite) TearDownTest() {
@@ -2085,4 +2086,13 @@ func (s *adminHandlerSuite) validatePhysicalTaskQueueInfo(expectedPhysicalTaskQu
 	s.Equal(expectedPhysicalTaskQueueInfo.GetPollers(), responsePhysicalTaskQueueInfo.GetPollers())
 	s.Equal(expectedPhysicalTaskQueueInfo.GetTaskQueueStats(), responsePhysicalTaskQueueInfo.GetTaskQueueStats())
 	s.Equal(expectedPhysicalTaskQueueInfo.GetInternalTaskQueueStatus(), responsePhysicalTaskQueueInfo.GetInternalTaskQueueStatus())
+}
+
+func (s *adminHandlerSuite) TestValidateGetKeyValuePair() {
+	key := dynamicconfig.Key("SearchAttributesNumberOfKeysLimit")
+	value := s.handler.DynamicConfigClient.GetValue(key)
+
+	for _, cv := range value{
+		s.Equal(10, cv.Value)
+	}
 }

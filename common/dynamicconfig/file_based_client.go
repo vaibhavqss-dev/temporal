@@ -94,7 +94,7 @@ func NewFileBasedClientWithReader(reader FileReader, config *FileBasedClientConf
 		subscriptions: make(map[int]ClientUpdateFunc),
 		keys:          collection.NewSyncMap[Key, string](),
 	}
-
+	
 	err := client.init()
 	if err != nil {
 		return nil, err

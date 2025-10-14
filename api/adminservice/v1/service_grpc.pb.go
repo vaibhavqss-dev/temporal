@@ -69,7 +69,7 @@ const (
 // AdminServiceClient is the client API for AdminService service.
 //
 // For semantics around ctx use and closing/ending streaming RPCs, please refer to https://pkg.go.dev/google.golang.org/grpc/?tab=doc#ClientConn.NewStream.
-type AdminServiceClient interface {
+type 	AdminServiceClient interface {
 	// RebuildMutableState attempts to rebuild mutable state according to persisted history events.
 	// NOTE: this is experimental API
 	RebuildMutableState(ctx context.Context, in *RebuildMutableStateRequest, opts ...grpc.CallOption) (*RebuildMutableStateResponse, error)

@@ -2,15 +2,12 @@ package frontend
 
 import (
 	"context"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"maps"
 	"math"
 	"net"
-	"reflect"
-	"regexp"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -27,6 +24,7 @@ import (
 	"go.temporal.io/server/api/adminservice/v1"
 	clusterspb "go.temporal.io/server/api/cluster/v1"
 	commonspb "go.temporal.io/server/api/common/v1"
+	dc "go.temporal.io/server/api/dynamicconfig/v1"
 	enumsspb "go.temporal.io/server/api/enums/v1"
 	"go.temporal.io/server/api/historyservice/v1"
 	"go.temporal.io/server/api/matchingservice/v1"
@@ -42,6 +40,7 @@ import (
 	"go.temporal.io/server/common/cluster"
 	"go.temporal.io/server/common/config"
 	"go.temporal.io/server/common/convert"
+	"go.temporal.io/server/common/dynamicconfig"
 	"go.temporal.io/server/common/headers"
 	"go.temporal.io/server/common/log"
 	"go.temporal.io/server/common/log/tag"
@@ -108,6 +107,7 @@ type (
 		clusterMetadata            cluster.Metadata
 		healthServer               *health.Server
 		historyHealthChecker       HealthChecker
+		DynamicConfigClient        dynamicconfig.Client
 
 		// DEPRECATED: only history service on server side is supposed to
 		// use the following components.
@@ -142,6 +142,7 @@ type (
 		HealthServer                        *health.Server
 		EventSerializer                     serialization.Serializer
 		TimeSource                          clock.TimeSource
+		DynamicConfigClient                 dynamicconfig.Client
 
 		// DEPRECATED: only history service on server side is supposed to
 		// use the following components.
@@ -228,6 +229,7 @@ func NewAdminHandler(
 		historyHealthChecker: historyHealthChecker,
 		taskCategoryRegistry: args.CategoryRegistry,
 		matchingClient:       args.matchingClient,
+		DynamicConfigClient:  args.DynamicConfigClient,
 	}
 }
 
@@ -2189,132 +2191,49 @@ func (adh *AdminHandler) GetDynamicConfigurations(
 	req *adminservice.GetDynamicConfigurationsRequest,
 ) (*adminservice.GetDynamicConfigurationsResponse, error) {
 	keys := req.GetDynamicConfigKeys()
-	pageSize := 100;
-	var nextPageToken []byte
-	
-	namespaces := make([]string, 0)
-	for{
-		listNamespacesResponse, err := adh.persistenceMetadataManager.ListNamespaces(ctx, &persistence.ListNamespacesRequest{
-			PageSize: pageSize,
-			NextPageToken: nextPageToken,
-		})
-		if err != nil {
-			return nil, fmt.Errorf("failed to list namespaces: %w", err)
-		}
-		for _, namespace := range listNamespacesResponse.Namespaces {
-			namespaces = append(namespaces, namespace.Namespace.Info.Name)
-		}
+	dynamicConfig := make(map[string]*dc.ConstrainedValues, len(keys))
 
-		if(len(listNamespacesResponse.NextPageToken)==0){
-			break;
-		}
-		nextPageToken = listNamespacesResponse.NextPageToken
-	}
-
-	
-	dynamicConfig := make(map[string]*adminservice.ConstrainedValues, len(keys))
 	for _, key := range keys {
-		constrainedValues := adh.getConstrainedValueForKey(key, namespaces)
-		if len(constrainedValues) > 0 {
-			dynamicConfig[key] = &adminservice.ConstrainedValues{
-				Items: constrainedValues,
+		commonValues := adh.DynamicConfigClient.GetValue(dynamicconfig.Key(key))
+		protoValues := make([]*dc.ConstrainedValue, 0)
+		for _, cv := range commonValues {
+			valueStruct, err := toStruct(cv.Value)
+			if err != nil {
+				return nil, fmt.Errorf("failed to convert value for key")
 			}
+			adh.logger.Info("Got values", tag.NewAnyTag("valueStruct", valueStruct), tag.NewAnyTag("count", len(commonValues)), tag.NewStringTag("key", key), tag.NewAnyTag("value", cv.Value))
+			protoValues = append(protoValues, &dc.ConstrainedValue{
+				Constraints: &dc.Constraints{
+					Namespace: cv.Constraints.Namespace,
+				},
+				Value: valueStruct,
+			})
+		}
+		dynamicConfig[key] = &dc.ConstrainedValues{
+			Items: protoValues,
 		}
 	}
-	
+
 	hostConfig := &adminservice.HostConfig{
 		Hostname:      adh.hostInfoProvider.HostInfo().Identity(),
 		DynamicConfig: dynamicConfig,
 	}
-	
+
 	return &adminservice.GetDynamicConfigurationsResponse{
 		HostConfig: []*adminservice.HostConfig{hostConfig},
 	}, nil
 }
 
-func (adh *AdminHandler) getConstrainedValueForKey(key string, namespaces []string) []*adminservice.ConstrainedValue {
-	var constrainedValues []*adminservice.ConstrainedValue
-	
-	configValue := reflect.ValueOf(adh.config)
-	if configValue.Kind() == reflect.Ptr {
-		configValue = configValue.Elem()
+func toStruct(v any) (*structpb.Struct, error) {
+	val, err := structpb.NewValue(v)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert value: %w", err)
 	}
-	
-	if fieldValue := adh.getConfigFieldByKey(configValue, key); fieldValue != nil {
-		for _, namespace := range namespaces {
-			if nsValue := adh.getValueFromField(fieldValue, namespace); nsValue != nil {
-				pbValue := toPBValue(nsValue)
-				pbStruct := &structpb.Struct{
-					Fields: map[string]*structpb.Value{key: pbValue},
-				}
-				constrainedValues = append(constrainedValues, &adminservice.ConstrainedValue{
-					Constraints: &adminservice.Constraints{Namespace: namespace},
-					Value:       pbStruct,
-				})
-			}
-		}
-	}
-	return constrainedValues
-}
-
-func (adh *AdminHandler) getConfigFieldByKey(configValue reflect.Value, key string) *reflect.Value {
-	configType := configValue.Type()
-	
-	for i := 0; i < configValue.NumField(); i++ {
-		field := configType.Field(i)
-		fieldValue := configValue.Field(i)
-		
-		if adh.matchesKey(field.Name, key) {
-			return &fieldValue
-		}
-	}
-	
-	return nil
-}
-
-func (adh *AdminHandler) matchesKey(fieldName, key string) bool {
-	if fieldName == key {
-		return true
-	}
-	if strings.EqualFold(fieldName, key) {
-		return true
-	}
-	parts := strings.Split(key, ".")
-	if len(parts) > 1 {
-		suffix := parts[len(parts)-1]
-		if strings.EqualFold(fieldName, suffix) {
-			return true
-		}
-	}
-	return false
-}
-
-func (adh *AdminHandler) getValueFromField(fieldValue *reflect.Value, namespace string) interface{} {
-	if fieldValue == nil || !fieldValue.IsValid() {
-		return nil
-	}
-	if fieldValue.Kind() == reflect.Func {
-		funcType := fieldValue.Type()
-		
-		if funcType.NumIn() == 0 && funcType.NumOut() == 1 {
-			defer func() { recover() }()
-			result := fieldValue.Call(nil)
-			if len(result) == 1 {
-				return result[0].Interface()
-			}
-		}
-		if funcType.NumIn() == 1 && funcType.In(0).Kind() == reflect.String && funcType.NumOut() == 1 {
-			defer func() { recover() }()
-			result := fieldValue.Call([]reflect.Value{reflect.ValueOf(namespace)})
-			if len(result) == 1 {
-				return result[0].Interface()
-			}
-		}
-	} else {
-		return fieldValue.Interface()
-	}
-	
-	return nil
+	return &structpb.Struct{
+		Fields: map[string]*structpb.Value{
+			"value": val,
+		},
+	}, nil
 }
 
 func validateHistoryDLQKey(
@@ -2358,58 +2277,57 @@ func convertFailoverHistoryToReplicationProto(
 	return replicationProto
 }
 
-func toPBValue(val interface{}) *structpb.Value {
-	if val == nil {
-		return structpb.NewNullValue()
-	}
-	switch t := val.(type) {
-	case string:
-		return structpb.NewStringValue(t)
-	case bool:
-		return structpb.NewBoolValue(t)
-	case int:
-		return structpb.NewNumberValue(float64(t))
-	case int32:
-		return structpb.NewNumberValue(float64(t))
-	case int64:
-		return structpb.NewNumberValue(float64(t))
-	case float32:
-		return structpb.NewNumberValue(float64(t))
-	case float64:
-		return structpb.NewNumberValue(t)
-	case time.Duration:
-		return structpb.NewStringValue(t.String())
-	case fmt.Stringer:
-		return structpb.NewStringValue(t.String())
-	}
-	if re, ok := val.(*regexp.Regexp); ok && re != nil {
-		return structpb.NewStringValue(re.String())
-	}
-	if re2, ok := val.(regexp.Regexp); ok {
-		return structpb.NewStringValue(re2.String())
-	}
-	rv := reflect.ValueOf(val)
-	if rv.IsValid() && rv.Kind() == reflect.Ptr {
-		if m := rv.MethodByName("Get"); m.IsValid() {
-			if m.Type().NumIn() == 0 && m.Type().NumOut() == 1 {
-				defer func() {
-					_ = recover()
-				}()
-				out := m.Call(nil)[0].Interface()
-				return toPBValue(out)
-			}
-		}
-	}
-	{
-		bs, err := json.Marshal(val)
-		if err == nil {
-			var out interface{}
-			if err2 := json.Unmarshal(bs, &out); err2 == nil {
-				if pb, err3 := structpb.NewValue(out); err3 == nil {
-					return pb
-				}
-			}
-		}
-	}
-	return structpb.NewStringValue(fmt.Sprint(val))
-}
+// 	if val == nil {
+// 		return structpb.NewNullValue()
+// 	}
+// 	switch t := val.(type) {
+// 	case string:
+// 		return structpb.NewStringValue(t)
+// 	case bool:
+// 		return structpb.NewBoolValue(t)
+// 	case int:
+// 		return structpb.NewNumberValue(float64(t))
+// 	case int32:
+// 		return structpb.NewNumberValue(float64(t))
+// 	case int64:
+// 		return structpb.NewNumberValue(float64(t))
+// 	case float32:
+// 		return structpb.NewNumberValue(float64(t))
+// 	case float64:
+// 		return structpb.NewNumberValue(t)
+// 	case time.Duration:
+// 		return structpb.NewStringValue(t.String())
+// 	case fmt.Stringer:
+// 		return structpb.NewStringValue(t.String())
+// 	}
+// 	if re, ok := val.(*regexp.Regexp); ok && re != nil {
+// 		return structpb.NewStringValue(re.String())
+// 	}
+// 	if re2, ok := val.(regexp.Regexp); ok {
+// 		return structpb.NewStringValue(re2.String())
+// 	}
+// 	rv := reflect.ValueOf(val)
+// 	if rv.IsValid() && rv.Kind() == reflect.Ptr {
+// 		if m := rv.MethodByName("Get"); m.IsValid() {
+// 			if m.Type().NumIn() == 0 && m.Type().NumOut() == 1 {
+// 				defer func() {
+// 					_ = recover()
+// 				}()
+// 				out := m.Call(nil)[0].Interface()
+// 				return toPBValue(out)
+// 			}
+// 		}
+// 	}
+// 	{
+// 		bs, err := json.Marshal(val)
+// 		if err == nil {
+// 			var out interface{}
+// 			if err2 := json.Unmarshal(bs, &out); err2 == nil {
+// 				if pb, err3 := structpb.NewValue(out); err3 == nil {
+// 					return pb
+// 				}
+// 			}
+// 		}
+// 	}
+// 	return structpb.NewStringValue(fmt.Sprint(val))
+// }

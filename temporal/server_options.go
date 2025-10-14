@@ -96,7 +96,6 @@ func (so *serverOptions) loadConfig() error {
 	if err != nil {
 		return fmt.Errorf("config file corrupted: %w", err)
 	}
-
 	return nil
 }
 
