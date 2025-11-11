@@ -104,6 +104,9 @@ var (
 // NewCollection creates a new collection. For subscriptions to work, you must call Start/Stop.
 // Get will work without Start/Stop.
 func NewCollection(client Client, logger log.Logger) *Collection {
+	// Do this at the first convenient place we have a logger:
+	logSharedStructureWarnings(logger)
+
 	return &Collection{
 		client:        client,
 		logger:        logger,
@@ -264,9 +267,6 @@ func matchAndConvertCvs[T any](
 ) (T, any) {
 	cvp, err := findMatch(cvs, precedence)
 	if err != nil {
-		if c.throttleLog() {
-			c.logger.Debug("No such key in dynamic config, using default", tag.Key(key.String()), tag.Error(err))
-		}
 		// couldn't find a constrained match, use default
 		return def, usingDefaultValue
 	}
@@ -334,9 +334,6 @@ func findAndResolveWithConstrainedDefaults[T any](
 		// leave value as the zero value, that's the best we can do
 		return value, usingDefaultValue
 	} else if valOrder == 0 {
-		if c.throttleLog() {
-			c.logger.Debug("No such key in dynamic config, using default", tag.Key(key.String()))
-		}
 		return defVal, usingDefaultValue
 	} else if defOrder < valOrder {
 		// value was present but constrained default took precedence
@@ -462,9 +459,6 @@ func dispatchUpdate[T any](
 	var raw any
 	cvp, err := findMatch(cvs, sub.prec)
 	if err != nil {
-		if c.throttleLog() {
-			c.logger.Debug("No such key in dynamic config, using default", tag.Key(key.String()), tag.Error(err))
-		}
 		raw = usingDefaultValue
 	} else {
 		raw = cvp.Value

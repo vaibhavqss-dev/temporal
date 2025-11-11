@@ -29,11 +29,12 @@ type (
 
 	// GenericSetting is an interface that all instances of Setting implement (by generated
 	// code in setting_gen.go). It can be used to refer to settings of any type and deal with
-	// them generically..
+	// them generically.
 	GenericSetting interface {
 		Key() Key
 		Precedence() Precedence
 		Validate(v any) error
+		// GetWithNamespace(namespace string) (interface{}, error)
 
 		// for internal use:
 		dispatchUpdate(*Collection, any, []ConstrainedValue)

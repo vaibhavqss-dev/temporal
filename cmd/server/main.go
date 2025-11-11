@@ -7,7 +7,6 @@ import (
 	"path"
 	"strings"
 	"text/template"
-	"time"
 	_ "time/tzdata" // embed tzdata as a fallback
 
 	"github.com/urfave/cli/v2"
@@ -193,8 +192,8 @@ func buildCLI() *cli.App {
 				if authorization.IsNoopAuthorizer(authorizer) && !allowNoAuth {
 					logger.Warn(
 						"Not using any authorizer and flag `--allow-no-auth` not detected. " +
-						"Future versions will require using the flag `--allow-no-auth` " +
-						"if you do not want to set an authorizer.",
+							"Future versions will require using the flag `--allow-no-auth` " +
+							"if you do not want to set an authorizer.",
 					)
 				}
 
@@ -223,42 +222,6 @@ func buildCLI() *cli.App {
 						return audienceMapper
 					}),
 				)
-
-				time.Sleep(500 * time.Millisecond)
-
-				logger.Info("========== Testing Dynamic Config Values ==========")
-
-				// Test with keys from your logs
-				keysFromLogs := []string{
-					"history.replicationenableupdatewithnewtaskmerge",
-					"component.callbacks.allowedaddresses",
-					"limit.maxidlength",
-					"system.enablenexus",
-				}
-
-				for _, keyStr := range keysFromLogs {
-					values := dynamicConfigClient.GetValue(dynamicconfig.Key(keyStr))
-					logger.Info("Key test",
-						tag.NewStringTag("key", keyStr),
-						tag.NewInt("valueCount", len(values)))
-
-					if len(values) > 0 {
-						for i, cv := range values {
-							logger.Info("  Value found",
-								tag.NewInt("index", i),
-								tag.NewStringTag("Namespace", cv.Constraints.Namespace),
-								tag.NewAnyTag("value", cv.Value))
-						}
-					}
-				}
-
-				// Test what constants resolve to
-				logger.Info("Testing constant FrontendRPS resolves to:",
-					tag.NewStringTag("key", "dynamicconfig.FrontendRPS"))
-
-				logger.Info("========== End Test ==========")
-				logger.Info("vaibhav******", tag.NewAnyTag("dynamic", dynamicConfigClient))
-
 				if err != nil {
 					return cli.Exit(fmt.Sprintf("Unable to create server. Error: %v.", err), 1)
 				}

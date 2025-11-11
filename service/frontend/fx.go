@@ -647,7 +647,8 @@ func AdminHandlerProvider(
 	healthServer *health.Server,
 	eventSerializer serialization.Serializer,
 	timeSource clock.TimeSource,
-	dynamicconfig dynamicconfig.Client,
+	dynamicconfigClient dynamicconfig.Client,
+	dc *dynamicconfig.Collection,	
 	taskCategoryRegistry tasks.TaskCategoryRegistry,
 	matchingClient resource.MatchingClient,
 ) *AdminHandler {
@@ -678,7 +679,8 @@ func AdminHandlerProvider(
 		healthServer,
 		eventSerializer,
 		timeSource,
-		dynamicconfig,
+		dynamicconfigClient,
+		dc,
 		taskCategoryRegistry,
 		matchingClient,
 	}

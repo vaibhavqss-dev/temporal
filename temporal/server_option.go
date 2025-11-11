@@ -112,7 +112,7 @@ func WithAudienceGetter(audienceGetter func(cfg *config.Config) authorization.JW
 	})
 }
 
-// W                          ithPersistenceServiceResolver sets a custom persistence service resolver which will convert service name or address value from config to another address
+// WithPersistenceServiceResolver sets a custom persistence service resolver which will convert service name or address value from config to another address
 func WithPersistenceServiceResolver(r resolver.ServiceResolver) ServerOption {
 	return applyFunc(func(s *serverOptions) {
 		s.persistenceServiceResolver = r
