@@ -2192,25 +2192,15 @@ func (adh *AdminHandler) GetDynamicConfigurations(
 	req *adminservice.GetDynamicConfigurationsRequest,
 ) (*adminservice.GetDynamicConfigurationsResponse, error) {
 	requestedKeys := req.GetDynamicConfigKeys()
-	settingsMap := *dynamicconfig.FrontendMapRegistry()
-
-	namespaces, err := adh.getNamespaces(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to get namespaces: %w", err)
-	}
+	settingsMap := *FrontendMapRegistry()
 
 	dynamicConfig := make(map[string]*dc.ConstrainedValues, len(requestedKeys))
+	lowerMap := make(map[string]interface{}, len(settingsMap))
+	for k, v := range settingsMap {
+		lowerMap[strings.ToLower(k)] = v
+	}
 	for _, key := range requestedKeys {
-		var setting interface{}
-		var settingvalue interface{}
-		var exist bool
-		for k, v := range settingsMap {
-			if strings.EqualFold(k, key) {
-				setting = v
-				exist = true
-				break
-			}
-		}
+		setting, exist := lowerMap[strings.ToLower(key)]
 		if !exist {
 			adh.logger.Warn("Key not found in registry", tag.NewAnyTag("setting", setting))
 			continue
@@ -2227,23 +2217,17 @@ func (adh *AdminHandler) GetDynamicConfigurations(
 
 				numIn := fnType.NumIn()
 				if numIn == 0 {
-					settingvalue = fn.Call(nil)[0].Interface()
-					valueStruct, err := toStruct(settingvalue)
-					if err != nil {
-						adh.logger.Warn("Failed to convert global value", tag.NewStringTag("key", key), tag.Error(err))
-						continue
+					valueStruct, err := toStruct(fn.Call(nil)[0].Interface())
+					if err!=nil{
+						adh.logger.Error("Failed to convert value to struct", tag.Error(err))
+						continue				
 					}
-					protoValues = append(protoValues, &dc.ConstrainedValue{
-						Value: valueStruct,
-					})
+					adh.logger.Info("*********value", tag.NewAnyTag("value", valueStruct))
+					protoValues = append(protoValues, &dc.ConstrainedValue{Value: valueStruct})
 				} else {
+					namespaces, _ := adh.getNamespaces(ctx)
 					for _, namespace := range namespaces {
-						settingvalue = fn.Call([]reflect.Value{reflect.ValueOf(namespace)})[0].Interface()
-						valueStruct, err := toStruct(settingvalue)
-						if err != nil {
-							adh.logger.Warn("Failed to convert global value", tag.NewStringTag("key", key), tag.Error(err))
-							continue
-						}
+						valueStruct, _ := toStruct(fn.Call([]reflect.Value{reflect.ValueOf(namespace)})[0].Interface())
 						protoValues = append(protoValues, &dc.ConstrainedValue{
 							Constraints: &dc.Constraints{
 								Namespace: namespace,
@@ -2253,7 +2237,6 @@ func (adh *AdminHandler) GetDynamicConfigurations(
 					}
 				}
 			}
-			// adh.logger.Info("*****Key", tag.NewAnyTag("settings", settingvalue))
 		}
 
 		if len(protoValues) > 0 {
@@ -2274,23 +2257,21 @@ func (adh *AdminHandler) GetDynamicConfigurations(
 }
 
 func (adh *AdminHandler) getNamespaces(ctx context.Context) ([]string, error) {
+	namespaces := make([]string, 0, 100)
+	nextPageToken := []byte(nil)
 
-	// rds := adh.config.PersistenceNamespaceMaxQPS
-
-	pageSize := 100
-	var nextPageToken []byte
-
-	namespaces := make([]string, 0)
 	for {
-		listNamespacesResponse, err := adh.persistenceMetadataManager.ListNamespaces(ctx, &persistence.ListNamespacesRequest{
-			PageSize:      pageSize,
-			NextPageToken: nextPageToken,
-		})
+		listNamespacesResponse, err := adh.persistenceMetadataManager.ListNamespaces(ctx,
+			&persistence.ListNamespacesRequest{
+				PageSize:      100,
+				NextPageToken: nextPageToken,
+			})
 		if err != nil {
 			return nil, fmt.Errorf("failed to list namespaces: %w", err)
 		}
-		for _, namespace := range listNamespacesResponse.Namespaces {
-			namespaces = append(namespaces, namespace.Namespace.Info.Name)
+
+		for _, ns := range listNamespacesResponse.Namespaces {
+			namespaces = append(namespaces, ns.Namespace.Info.Name)
 		}
 
 		if len(listNamespacesResponse.NextPageToken) == 0 {
