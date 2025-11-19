@@ -161,10 +161,6 @@ func (c *Collection) GetPingChecks() []pingable.Check {
 	}
 }
 
-func (c *Collection) GetKeyValuePairs(key Key) []ConstrainedValue {
-	return c.client.GetValue(key)
-}
-
 func (c *Collection) GetClient() Client {
 	return c.client
 }

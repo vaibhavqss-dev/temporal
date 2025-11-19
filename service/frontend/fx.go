@@ -679,7 +679,6 @@ func AdminHandlerProvider(
 		healthServer,
 		eventSerializer,
 		timeSource,
-		dynamicconfigClient,
 		dc,
 		taskCategoryRegistry,
 		matchingClient,

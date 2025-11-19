@@ -8,7 +8,6 @@ import (
 	"maps"
 	"math"
 	"net"
-	"reflect"
 	"strings"
 	"sync/atomic"
 	"time"
@@ -59,8 +58,6 @@ import (
 	"go.temporal.io/server/common/searchattribute"
 	serviceerrors "go.temporal.io/server/common/serviceerror"
 	"go.temporal.io/server/common/util"
-	"go.temporal.io/server/components/callbacks"
-	"go.temporal.io/server/components/nexusoperations"
 	"go.temporal.io/server/service/history/tasks"
 	"go.temporal.io/server/service/worker/addsearchattributes"
 	"go.temporal.io/server/service/worker/dlq"
@@ -78,7 +75,7 @@ const (
 
 type (
 	// AdminHandler - gRPC handler interface for adminservice
-	AdminHandler struct {
+		AdminHandler struct {
 		adminservice.UnimplementedAdminServiceServer
 
 		status int32
@@ -146,7 +143,6 @@ type (
 		HealthServer                        *health.Server
 		EventSerializer                     serialization.Serializer
 		TimeSource                          clock.TimeSource
-		DynamicConfigClient                 dynamicconfig.Client
 		dc                                  *dynamicconfig.Collection
 
 		// DEPRECATED: only history service on server side is supposed to
@@ -234,7 +230,6 @@ func NewAdminHandler(
 		historyHealthChecker: historyHealthChecker,
 		taskCategoryRegistry: args.CategoryRegistry,
 		matchingClient:       args.matchingClient,
-		DynamicConfigClient:  args.DynamicConfigClient,
 		dc:                   args.dc,
 	}
 }
@@ -2192,57 +2187,28 @@ func (adh *AdminHandler) GetDynamicConfigurations(
 	req *adminservice.GetDynamicConfigurationsRequest,
 ) (*adminservice.GetDynamicConfigurationsResponse, error) {
 	requestedKeys := req.GetDynamicConfigKeys()
-	settingsMap := *FrontendMapRegistry()
-
 	dynamicConfig := make(map[string]*dc.ConstrainedValues, len(requestedKeys))
-	lowerMap := make(map[string]interface{}, len(settingsMap))
-	for k, v := range settingsMap {
-		lowerMap[strings.ToLower(k)] = v
-	}
+
 	for _, key := range requestedKeys {
-		setting, exist := lowerMap[strings.ToLower(key)]
-		if !exist {
-			adh.logger.Warn("Key not found in registry", tag.NewAnyTag("setting", setting))
-			continue
+		var dcEntry []dynamicconfig.ConstrainedValue
+		dcEntry = adh.dc.GetClient().GetValue(dynamicconfig.Key(key))
+
+		// fallback to default value if dynamic config is not set manually
+		if dcEntry == nil {
+			adh.logger.Info("keys not set, getting default value", tag.Key(key))
+			dcEntry = dynamicconfig.GetDefaultValueForKey(dynamicconfig.Key(key))
 		}
 
-		t := reflect.ValueOf(setting)
-		method := t.MethodByName("Get")
 		protoValues := make([]*dc.ConstrainedValue, 0)
-		if method.IsValid() {
-			settingValue := method.Call(([]reflect.Value{reflect.ValueOf(adh.dc)}))
-			if len(settingValue) > 0 {
-				fn := settingValue[0]
-				fnType := fn.Type()
-
-				numIn := fnType.NumIn()
-				if numIn == 0 {
-					valueStruct, err := toStruct(fn.Call(nil)[0].Interface())
-					if err!=nil{
-						adh.logger.Error("Failed to convert value to struct", tag.Error(err))
-						continue				
-					}
-					adh.logger.Info("*********value", tag.NewAnyTag("value", valueStruct))
-					protoValues = append(protoValues, &dc.ConstrainedValue{Value: valueStruct})
-				} else {
-					namespaces, _ := adh.getNamespaces(ctx)
-					for _, namespace := range namespaces {
-						valueStruct, _ := toStruct(fn.Call([]reflect.Value{reflect.ValueOf(namespace)})[0].Interface())
-						protoValues = append(protoValues, &dc.ConstrainedValue{
-							Constraints: &dc.Constraints{
-								Namespace: namespace,
-							},
-							Value: valueStruct,
-						})
-					}
-				}
-			}
+		for _, ConstrainedValue := range dcEntry {
+			value, _ := toStruct(ConstrainedValue.Value)
+			protoValues = append(protoValues, &dc.ConstrainedValue{
+				Value:       value,
+				Constraints: &dc.Constraints{Namespace: ConstrainedValue.Constraints.Namespace},
+			})
 		}
-
-		if len(protoValues) > 0 {
-			dynamicConfig[key] = &dc.ConstrainedValues{
-				Items: protoValues,
-			}
+		dynamicConfig[key] = &dc.ConstrainedValues{
+			Items: protoValues,
 		}
 	}
 
@@ -2254,32 +2220,6 @@ func (adh *AdminHandler) GetDynamicConfigurations(
 	return &adminservice.GetDynamicConfigurationsResponse{
 		HostConfig: []*adminservice.HostConfig{hostConfig},
 	}, nil
-}
-
-func (adh *AdminHandler) getNamespaces(ctx context.Context) ([]string, error) {
-	namespaces := make([]string, 0, 100)
-	nextPageToken := []byte(nil)
-
-	for {
-		listNamespacesResponse, err := adh.persistenceMetadataManager.ListNamespaces(ctx,
-			&persistence.ListNamespacesRequest{
-				PageSize:      100,
-				NextPageToken: nextPageToken,
-			})
-		if err != nil {
-			return nil, fmt.Errorf("failed to list namespaces: %w", err)
-		}
-
-		for _, ns := range listNamespacesResponse.Namespaces {
-			namespaces = append(namespaces, ns.Namespace.Info.Name)
-		}
-
-		if len(listNamespacesResponse.NextPageToken) == 0 {
-			break
-		}
-		nextPageToken = listNamespacesResponse.NextPageToken
-	}
-	return namespaces, nil
 }
 
 func toStruct(v any) (*structpb.Struct, error) {
@@ -2333,118 +2273,4 @@ func convertFailoverHistoryToReplicationProto(
 	}
 
 	return replicationProto
-}
-
-func FrontendMapRegistry() *map[string]interface{} {
-	return &map[string]interface{}{
-		"PersistenceMaxQPS":                                                 dynamicconfig.FrontendPersistenceMaxQPS,
-		"PersistenceGlobalMaxQPS":                                           dynamicconfig.FrontendPersistenceGlobalMaxQPS,
-		"PersistenceNamespaceMaxQPS":                                        dynamicconfig.FrontendPersistenceNamespaceMaxQPS,
-		"PersistenceGlobalNamespaceMaxQPS":                                  dynamicconfig.FrontendPersistenceGlobalNamespaceMaxQPS,
-		"PersistencePerShardNamespaceMaxQPS":                                dynamicconfig.DefaultPerShardNamespaceRPSMax,
-		"PersistenceDynamicRateLimitingParams":                              dynamicconfig.FrontendPersistenceDynamicRateLimitingParams,
-		"PersistenceQPSBurstRatio":                                          dynamicconfig.PersistenceQPSBurstRatio,
-		"VisibilityPersistenceMaxReadQPS":                                   dynamicconfig.VisibilityPersistenceMaxReadQPS,
-		"VisibilityPersistenceMaxWriteQPS":                                  dynamicconfig.VisibilityPersistenceMaxWriteQPS,
-		"VisibilityPersistenceSlowQueryThreshold":                           dynamicconfig.VisibilityPersistenceSlowQueryThreshold,
-		"VisibilityMaxPageSize":                                             dynamicconfig.FrontendVisibilityMaxPageSize,
-		"EnableReadFromSecondaryVisibility":                                 dynamicconfig.EnableReadFromSecondaryVisibility,
-		"VisibilityEnableShadowReadMode":                                    dynamicconfig.VisibilityEnableShadowReadMode,
-		"VisibilityDisableOrderByClause":                                    dynamicconfig.VisibilityDisableOrderByClause,
-		"VisibilityEnableManualPagination":                                  dynamicconfig.VisibilityEnableManualPagination,
-		"VisibilityAllowList":                                               dynamicconfig.VisibilityAllowList,
-		"SuppressErrorSetSystemSearchAttribute":                             dynamicconfig.SuppressErrorSetSystemSearchAttribute,
-		"HistoryMaxPageSize":                                                dynamicconfig.FrontendHistoryMaxPageSize,
-		"RPS":                                                               dynamicconfig.FrontendRPS,
-		"GlobalRPS":                                                         dynamicconfig.FrontendGlobalRPS,
-		"OperatorRPSRatio":                                                  dynamicconfig.OperatorRPSRatio,
-		"NamespaceReplicationInducingAPIsRPS":                               dynamicconfig.FrontendNamespaceReplicationInducingAPIsRPS,
-		"MaxNamespaceRPSPerInstance":                                        dynamicconfig.FrontendMaxNamespaceRPSPerInstance,
-		"MaxNamespaceBurstRatioPerInstance":                                 dynamicconfig.FrontendMaxNamespaceBurstRatioPerInstance,
-		"MaxConcurrentLongRunningRequestsPerInstance":                       dynamicconfig.FrontendMaxConcurrentLongRunningRequestsPerInstance,
-		"MaxGlobalConcurrentLongRunningRequests":                            dynamicconfig.FrontendGlobalMaxConcurrentLongRunningRequests,
-		"MaxNamespaceVisibilityRPSPerInstance":                              dynamicconfig.FrontendMaxNamespaceVisibilityRPSPerInstance,
-		"MaxNamespaceVisibilityBurstRatioPerInstance":                       dynamicconfig.FrontendMaxNamespaceVisibilityBurstRatioPerInstance,
-		"MaxNamespaceNamespaceReplicationInducingAPIsRPSPerInstance":        dynamicconfig.FrontendMaxNamespaceNamespaceReplicationInducingAPIsRPSPerInstance,
-		"MaxNamespaceNamespaceReplicationInducingAPIsBurstRatioPerInstance": dynamicconfig.FrontendMaxNamespaceNamespaceReplicationInducingAPIsBurstRatioPerInstance,
-		"GlobalNamespaceRPS":                                                dynamicconfig.FrontendGlobalNamespaceRPS,
-		"InternalFEGlobalNamespaceRPS":                                      dynamicconfig.InternalFrontendGlobalNamespaceRPS,
-		"GlobalNamespaceVisibilityRPS":                                      dynamicconfig.FrontendGlobalNamespaceVisibilityRPS,
-		"InternalFEGlobalNamespaceVisibilityRPS":                            dynamicconfig.InternalFrontendGlobalNamespaceVisibilityRPS,
-		"GlobalNamespaceNamespaceReplicationInducingAPIsRPS":                dynamicconfig.FrontendGlobalNamespaceNamespaceReplicationInducingAPIsRPS,
-		"MaxIDLengthLimit":                                                  dynamicconfig.MaxIDLengthLimit,
-		"WorkerBuildIdSizeLimit":                                            dynamicconfig.WorkerBuildIdSizeLimit,
-		"ReachabilityTaskQueueScanLimit":                                    dynamicconfig.ReachabilityTaskQueueScanLimit,
-		"ReachabilityQueryBuildIdLimit":                                     dynamicconfig.ReachabilityQueryBuildIdLimit,
-		"ReachabilityCacheOpenWFsTTL":                                       dynamicconfig.ReachabilityCacheOpenWFsTTL,
-		"ReachabilityCacheClosedWFsTTL":                                     dynamicconfig.ReachabilityCacheClosedWFsTTL,
-		"ReachabilityQuerySetDurationSinceDefault":                          dynamicconfig.ReachabilityQuerySetDurationSinceDefault,
-		"MaxBadBinaries":                                                    dynamicconfig.FrontendMaxBadBinaries,
-		"DisableListVisibilityByFilter":                                     dynamicconfig.DisableListVisibilityByFilter,
-		"BlobSizeLimitError":                                                dynamicconfig.BlobSizeLimitError,
-		"BlobSizeLimitWarn":                                                 dynamicconfig.BlobSizeLimitWarn,
-		"ThrottledLogRPS":                                                   dynamicconfig.FrontendThrottledLogRPS,
-		"ShutdownDrainDuration":                                             dynamicconfig.FrontendShutdownDrainDuration,
-		"ShutdownFailHealthCheckDuration":                                   dynamicconfig.FrontendShutdownFailHealthCheckDuration,
-		"EnableNamespaceNotActiveAutoForwarding":                            dynamicconfig.EnableNamespaceNotActiveAutoForwarding,
-		"SearchAttributesNumberOfKeysLimit":                                 dynamicconfig.SearchAttributesNumberOfKeysLimit,
-		"SearchAttributesSizeOfValueLimit":                                  dynamicconfig.SearchAttributesSizeOfValueLimit,
-		"SearchAttributesTotalSizeLimit":                                    dynamicconfig.SearchAttributesTotalSizeLimit,
-		"VisibilityArchivalQueryMaxPageSize":                                dynamicconfig.VisibilityArchivalQueryMaxPageSize,
-		"DisallowQuery":                                                     dynamicconfig.DisallowQuery,
-		"SendRawWorkflowHistory":                                            dynamicconfig.SendRawWorkflowHistory,
-		"DefaultWorkflowRetryPolicy":                                        dynamicconfig.DefaultWorkflowRetryPolicy,
-		"DefaultWorkflowTaskTimeout":                                        dynamicconfig.DefaultWorkflowTaskTimeout,
-		"EnableServerVersionCheck":                                          dynamicconfig.EnableServerVersionCheck,
-		"EnableTokenNamespaceEnforcement":                                   dynamicconfig.EnableTokenNamespaceEnforcement,
-		"ExposeAuthorizerErrors":                                            dynamicconfig.ExposeAuthorizerErrors,
-		"KeepAliveMinTime":                                                  dynamicconfig.KeepAliveMinTime,
-		"KeepAlivePermitWithoutStream":                                      dynamicconfig.KeepAlivePermitWithoutStream,
-		"KeepAliveMaxConnectionIdle":                                        dynamicconfig.KeepAliveMaxConnectionIdle,
-		"KeepAliveMaxConnectionAge":                                         dynamicconfig.KeepAliveMaxConnectionAge,
-		"KeepAliveMaxConnectionAgeGrace":                                    dynamicconfig.KeepAliveMaxConnectionAgeGrace,
-		"KeepAliveTime":                                                     dynamicconfig.KeepAliveTime,
-		"KeepAliveTimeout":                                                  dynamicconfig.KeepAliveTimeout,
-		"DeleteNamespaceDeleteActivityRPS":                                  dynamicconfig.DeleteNamespaceDeleteActivityRPS,
-		"DeleteNamespacePageSize":                                           dynamicconfig.DeleteNamespacePageSize,
-		"DeleteNamespacePagesPerExecution":                                  dynamicconfig.DeleteNamespacePagesPerExecution,
-		"DeleteNamespaceConcurrentDeleteExecutionsActivities":               dynamicconfig.DeleteNamespaceConcurrentDeleteExecutionsActivities,
-		"DeleteNamespaceNamespaceDeleteDelay":                               dynamicconfig.DeleteNamespaceNamespaceDeleteDelay,
-		"EnableSchedules":                                                   dynamicconfig.FrontendEnableSchedules,
-		"EnableDeployments":                                                 dynamicconfig.EnableDeployments,
-		"EnableDeploymentVersions":                                          dynamicconfig.EnableDeploymentVersions,
-		"EnableBatcher":                                                     dynamicconfig.FrontendEnableBatcher,
-		"MaxConcurrentBatchOperation":                                       dynamicconfig.FrontendMaxConcurrentBatchOperationPerNamespace,
-		"MaxExecutionCountBatchOperation":                                   dynamicconfig.FrontendMaxExecutionCountBatchOperationPerNamespace,
-		"EnableExecuteMultiOperation":                                       dynamicconfig.FrontendEnableExecuteMultiOperation,
-		"EnableUpdateWorkflowExecution":                                     dynamicconfig.FrontendEnableUpdateWorkflowExecution,
-		"EnableUpdateWorkflowExecutionAsyncAccepted":                        dynamicconfig.FrontendEnableUpdateWorkflowExecutionAsyncAccepted,
-		"NumConsecutiveWorkflowTaskProblemsToTriggerSearchAttribute":        dynamicconfig.NumConsecutiveWorkflowTaskProblemsToTriggerSearchAttribute,
-		"EnableWorkerVersioningData":                                        dynamicconfig.FrontendEnableWorkerVersioningDataAPIs,
-		"EnableWorkerVersioningWorkflow":                                    dynamicconfig.FrontendEnableWorkerVersioningWorkflowAPIs,
-		"EnableWorkerVersioningRules":                                       dynamicconfig.FrontendEnableWorkerVersioningRuleAPIs,
-		"EnableNexusAPIs":                                                   dynamicconfig.EnableNexus,
-		"CallbackURLMaxLength":                                              dynamicconfig.FrontendCallbackURLMaxLength,
-		"CallbackHeaderMaxSize":                                             dynamicconfig.FrontendCallbackHeaderMaxSize,
-		"MaxCallbacksPerWorkflow":                                           dynamicconfig.MaxCallbacksPerWorkflow,
-		"MaxNexusOperationTokenLength":                                      nexusoperations.MaxOperationTokenLength,
-		"NexusRequestHeadersBlacklist":                                      dynamicconfig.FrontendNexusRequestHeadersBlacklist,
-		"NexusForwardRequestUseEndpoint":                                    dynamicconfig.FrontendNexusForwardRequestUseEndpointDispatch,
-		"NexusOperationsMetricTagConfig":                                    nexusoperations.MetricTagConfiguration,
-		"LinkMaxSize":                                                       dynamicconfig.FrontendLinkMaxSize,
-		"MaxLinksPerRequest":                                                dynamicconfig.FrontendMaxLinksPerRequest,
-		"CallbackEndpointConfigs":                                           callbacks.AllowedAddresses,
-		"AdminEnableListHistoryTasks":                                       dynamicconfig.AdminEnableListHistoryTasks,
-		"MaskInternalErrorDetails":                                          dynamicconfig.FrontendMaskInternalErrorDetails,
-		"HistoryHostErrorPercentage":                                        dynamicconfig.HistoryHostErrorPercentage,
-		"HistoryHostSelfErrorProportion":                                    dynamicconfig.HistoryHostSelfErrorProportion,
-		"LogAllReqErrors":                                                   dynamicconfig.LogAllReqErrors,
-		"EnableEagerWorkflowStart":                                          dynamicconfig.EnableEagerWorkflowStart,
-		"WorkflowRulesAPIsEnabled":                                          dynamicconfig.WorkflowRulesAPIsEnabled,
-		"MaxWorkflowRulesPerNamespace":                                      dynamicconfig.MaxWorkflowRulesPerNamespace,
-		"WorkerHeartbeatsEnabled":                                           dynamicconfig.WorkerHeartbeatsEnabled,
-		"ListWorkersEnabled":                                                dynamicconfig.ListWorkersEnabled,
-		"WorkerCommandsEnabled":                                             dynamicconfig.WorkerCommandsEnabled,
-		"HTTPAllowedHosts":                                                  dynamicconfig.FrontendHTTPAllowedHosts,
-	}
 }

@@ -34,7 +34,7 @@ type (
 		Key() Key
 		Precedence() Precedence
 		Validate(v any) error
-		// GetWithNamespace(namespace string) (interface{}, error)
+		GetValue() []ConstrainedValue
 
 		// for internal use:
 		dispatchUpdate(*Collection, any, []ConstrainedValue)
