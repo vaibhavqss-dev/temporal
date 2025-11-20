@@ -108,7 +108,7 @@ type (
 		healthServer               *health.Server
 		historyHealthChecker       HealthChecker
 		DynamicConfigClient        dynamicconfig.Client
-		dc                         *dynamicconfig.Collection
+		dynamicClient              dynamicconfig.Client
 
 		// DEPRECATED: only history service on server side is supposed to
 		// use the following components.
@@ -143,7 +143,7 @@ type (
 		HealthServer                        *health.Server
 		EventSerializer                     serialization.Serializer
 		TimeSource                          clock.TimeSource
-		dc                                  *dynamicconfig.Collection
+		dynamicClient                       dynamicconfig.Client
 
 		// DEPRECATED: only history service on server side is supposed to
 		// use the following components.
@@ -230,7 +230,7 @@ func NewAdminHandler(
 		historyHealthChecker: historyHealthChecker,
 		taskCategoryRegistry: args.CategoryRegistry,
 		matchingClient:       args.matchingClient,
-		dc:                   args.dc,
+		dynamicClient:        args.dynamicClient,
 	}
 }
 
@@ -2192,23 +2192,12 @@ func (adh *AdminHandler) GetDynamicConfigurations(
 	for _, key := range requestedKeys {
 		var dcEntry []dynamicconfig.ConstrainedValue
 		k := dynamicconfig.Key(key)
-		dcEntry = adh.dc.GetClient().GetValue(k)
+		dcEntry = adh.dynamicClient.GetValue(k)
 
 		// get global default value
-		defaultValue := dynamicconfig.GetDefaultValueForKey(k)
 		if dcEntry == nil {
+			defaultValue := dynamicconfig.GetDefaultValueForKey(k)
 			dcEntry = append(dcEntry, defaultValue)
-		} else {
-			var hasDefault bool
-			for i := range dcEntry {
-				if dcEntry[i].Constraints == (dynamicconfig.Constraints{}) {
-					hasDefault = true
-					break
-				}
-			}
-			if !hasDefault {
-				dcEntry = append(dcEntry, defaultValue)
-			}
 		}
 
 		protoValues := make([]*dc.ConstrainedValue, 0)

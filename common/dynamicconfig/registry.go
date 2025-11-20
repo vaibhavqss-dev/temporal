@@ -40,10 +40,10 @@ func queryRegistry(k Key) GenericSetting {
 
 func GetDefaultValueForKey(k Key) ConstrainedValue {
 	s := queryRegistry(k)
-	if s == nil {
-		return ConstrainedValue{}
+	return ConstrainedValue{
+		Constraints: Constraints{},
+		Value:       s.DefaultValue(),
 	}
-	return s.GetDefaultValue()
 }
 
 // For testing only; do not call from regular code!

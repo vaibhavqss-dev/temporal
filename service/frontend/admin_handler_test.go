@@ -37,7 +37,6 @@ import (
 	"go.temporal.io/server/common/cluster"
 	"go.temporal.io/server/common/config"
 	"go.temporal.io/server/common/dynamicconfig"
-	"go.temporal.io/server/common/log"
 	"go.temporal.io/server/common/membership"
 	"go.temporal.io/server/common/namespace"
 	"go.temporal.io/server/common/persistence"
@@ -84,7 +83,7 @@ type (
 		mockProducer               *persistence.MockNamespaceReplicationQueue
 		mockMatchingClient         *matchingservicemock.MockMatchingServiceClient
 		mockSaMapper               *searchattribute.MockMapper
-		dynamicconfig              *dynamicconfig.Collection
+		dynamicClient              dynamicconfig.Client
 
 		namespace      namespace.Name
 		namespaceID    namespace.ID
@@ -140,19 +139,21 @@ func (s *adminHandlerSuite) SetupTest() {
 
 	dynamicConfigClient := dynamicconfig.NewMemoryClient()
 	dynamicConfigClient.OverrideValue("frontend.rps", 10)
+	dynamicConfigClient.OverrideValue("matching.rps", 20)
+	dynamicConfigClient.OverrideValue("history.rps", 30)
 	dynamicConfigClient.OverrideValue("limit.maxIDLength", 255)
 	dynamicConfigClient.OverrideValue("history.enableTransitionHistory", true)
-	s.dynamicconfig = dynamicconfig.NewCollection(dynamicConfigClient, &log.MockLogger{})
+	s.dynamicClient = dynamicConfigClient
 
 	cfg := &Config{
-		NumHistoryShards: 4,
-
+		NumHistoryShards:                      4,
 		SearchAttributesNumberOfKeysLimit:     dynamicconfig.GetIntPropertyFnFilteredByNamespace(10),
 		SearchAttributesSizeOfValueLimit:      dynamicconfig.GetIntPropertyFnFilteredByNamespace(10),
 		SearchAttributesTotalSizeLimit:        dynamicconfig.GetIntPropertyFnFilteredByNamespace(10),
 		VisibilityAllowList:                   dynamicconfig.GetBoolPropertyFnFilteredByNamespace(false),
 		SuppressErrorSetSystemSearchAttribute: dynamicconfig.GetBoolPropertyFnFilteredByNamespace(false),
 	}
+
 	args := NewAdminHandlerArgs{
 		persistenceConfig,
 		cfg,
@@ -180,7 +181,7 @@ func (s *adminHandlerSuite) SetupTest() {
 		health.NewServer(),
 		serialization.NewSerializer(),
 		clock.NewRealTimeSource(),
-		s.dynamicconfig,
+		s.dynamicClient,
 		tasks.NewDefaultTaskCategoryRegistry(),
 		s.mockResource.GetMatchingClient(),
 	}
@@ -2090,17 +2091,45 @@ func (s *adminHandlerSuite) TestImportWorkflowExecution_WithNonAliasedSearchAttr
 }
 
 func (s *adminHandlerSuite) TestGetDynamicConfigurations() {
-	key1 := dynamicconfig.Key("frontend.rps")
-	key2 := dynamicconfig.Key("limit.maxIDLength")
-	key3 := dynamicconfig.Key("history.enableTransitionHistory")
 
-	value1 := s.dynamicconfig.GetClient().GetValue(key1)
-	value2 := s.dynamicconfig.GetClient().GetValue(key2)
-	value3 := s.dynamicconfig.GetClient().GetValue(key3)
+	s.mockResource.HostInfoProvider.EXPECT().HostInfo().Return(membership.NewHostInfoFromAddress("test-dynamic-config-host")).Times(1)
+	res, err := s.handler.GetDynamicConfigurations(context.Background(), &adminservice.GetDynamicConfigurationsRequest{
+		DynamicConfigKeys: []string{
+			"frontend.rps",
+			"matching.rps",
+			"history.rps",
+			"limit.maxIDLength",
+			"history.enableTransitionHistory",
+		},
+	})
 
-	s.Equal(10, value1[0].Value)
-	s.Equal(255, value2[0].Value) 
-	s.Equal(true, value3[0].Value)
+	s.NoError(err)
+	s.NotNil(res)
+	s.NotNil(res.HostConfig)
+	s.Len(res.HostConfig, 1)
+
+	hostConfig := res.HostConfig[0]
+	s.NotNil(hostConfig.DynamicConfig)
+	s.Len(hostConfig.DynamicConfig, 3)
+
+	rpsConfig := hostConfig.DynamicConfig["frontend.rps"]
+	s.NotNil(rpsConfig)
+	s.Len(rpsConfig.Items, 1)
+	s.NotNil(rpsConfig.Items[0].Constraints)
+	s.Equal(float64(10), rpsConfig.Items[0].Value.AsMap()["value"])
+
+	maxIDLengthConfig := hostConfig.DynamicConfig["limit.maxIDLength"]
+	s.NotNil(maxIDLengthConfig)
+	s.Len(maxIDLengthConfig.Items, 1)
+	s.Equal(float64(255), maxIDLengthConfig.Items[0].Value.AsMap()["value"])
+
+	transitionHistoryConfig := hostConfig.DynamicConfig["history.enableTransitionHistory"]
+	s.NotNil(transitionHistoryConfig)
+	s.Len(transitionHistoryConfig.Items, 1)
+	s.NotNil(transitionHistoryConfig.Items[0].Constraints)
+	s.Equal(true, transitionHistoryConfig.Items[0].Value.AsMap()["value"])
+
+	s.NotEmpty(hostConfig.Hostname)
 }
 
 func (s *adminHandlerSuite) validatePhysicalTaskQueueInfo(expectedPhysicalTaskQueueInfo *taskqueuespb.PhysicalTaskQueueInfo,

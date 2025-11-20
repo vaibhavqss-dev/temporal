@@ -94,7 +94,7 @@ func NewFileBasedClientWithReader(reader FileReader, config *FileBasedClientConf
 		subscriptions: make(map[int]ClientUpdateFunc),
 		keys:          collection.NewSyncMap[Key, string](),
 	}
-	
+
 	err := client.init()
 	if err != nil {
 		return nil, err
@@ -229,6 +229,7 @@ func loadFile(contents []byte) (configValueMap, *LoadResult) {
 		}
 
 		cvs := make([]ConstrainedValue, len(yamlCV))
+		var hasDefault bool
 		for i, cv := range yamlCV {
 			// yaml will unmarshal map into map[interface{}]interface{} instead of map[string]interface{}
 			// manually convert key type to string for all values here
@@ -248,6 +249,17 @@ func loadFile(contents []byte) (configValueMap, *LoadResult) {
 
 			cvs[i].Value = val
 			cvs[i].Constraints = convertYamlConstraints(key, cv.Constraints, precedence, lr)
+		
+			// check for default value
+			if cvs[i].Constraints == (Constraints{}) {
+				hasDefault = true
+			}
+		}	
+
+		// add default value if not present
+		if !hasDefault {
+			defaultValue := GetDefaultValueForKey(Key(key))
+			cvs = append(cvs, defaultValue)
 		}
 		newValues[strings.ToLower(key)] = cvs
 	}

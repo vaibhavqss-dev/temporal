@@ -62,7 +62,9 @@ history.ReplicationEnableUpdateWithNewTaskMerge:
   - value: true
 history.hostLevelCacheMaxSize:
   - value: 16384
-    constraints:
-      Namespace: "vaibhav"
 history.enableTransitionHistory:
   - value: true
+history.replicatorProcessorMaxPollIntervalJitterCoefficient:
+  - value: 0.5
+    constraints:
+      Namespace: "Vaibhav"
