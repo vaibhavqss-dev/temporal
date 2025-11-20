@@ -61,6 +61,8 @@ matching.queryWorkflowTaskTimeoutLogRate:
 history.ReplicationEnableUpdateWithNewTaskMerge:
   - value: true
 history.hostLevelCacheMaxSize:
-  - value: 8192
+  - value: 16384
+    constraints:
+      Namespace: "vaibhav"
 history.enableTransitionHistory:
   - value: true

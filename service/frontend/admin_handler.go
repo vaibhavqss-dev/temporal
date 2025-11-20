@@ -75,7 +75,7 @@ const (
 
 type (
 	// AdminHandler - gRPC handler interface for adminservice
-		AdminHandler struct {
+	AdminHandler struct {
 		adminservice.UnimplementedAdminServiceServer
 
 		status int32
@@ -2191,25 +2191,43 @@ func (adh *AdminHandler) GetDynamicConfigurations(
 
 	for _, key := range requestedKeys {
 		var dcEntry []dynamicconfig.ConstrainedValue
-		dcEntry = adh.dc.GetClient().GetValue(dynamicconfig.Key(key))
+		k := dynamicconfig.Key(key)
+		dcEntry = adh.dc.GetClient().GetValue(k)
 
-		// fallback to default value if dynamic config is not set manually
+		// get global default value
+		defaultValue := dynamicconfig.GetDefaultValueForKey(k)
 		if dcEntry == nil {
-			adh.logger.Info("keys not set, getting default value", tag.Key(key))
-			dcEntry = dynamicconfig.GetDefaultValueForKey(dynamicconfig.Key(key))
+			dcEntry = append(dcEntry, defaultValue)
+		} else {
+			var hasDefault bool
+			for i := range dcEntry {
+				if dcEntry[i].Constraints == (dynamicconfig.Constraints{}) {
+					hasDefault = true
+					break
+				}
+			}
+			if !hasDefault {
+				dcEntry = append(dcEntry, defaultValue)
+			}
 		}
 
 		protoValues := make([]*dc.ConstrainedValue, 0)
 		for _, ConstrainedValue := range dcEntry {
 			value, _ := toStruct(ConstrainedValue.Value)
 			protoValues = append(protoValues, &dc.ConstrainedValue{
-				Value:       value,
-				Constraints: &dc.Constraints{Namespace: ConstrainedValue.Constraints.Namespace},
+				Value: value,
+				Constraints: &dc.Constraints{
+					Namespace:     ConstrainedValue.Constraints.Namespace,
+					NamespaceId:   ConstrainedValue.Constraints.NamespaceID,
+					TaskQueueName: ConstrainedValue.Constraints.TaskQueueName,
+					TaskQueueType: int32(ConstrainedValue.Constraints.TaskQueueType),
+					ShardId:       ConstrainedValue.Constraints.ShardID,
+					TaskType:      int32(ConstrainedValue.Constraints.TaskType),
+					Destination:   ConstrainedValue.Constraints.Destination,
+				},
 			})
 		}
-		dynamicConfig[key] = &dc.ConstrainedValues{
-			Items: protoValues,
-		}
+		dynamicConfig[key] = &dc.ConstrainedValues{Items: protoValues}
 	}
 
 	hostConfig := &adminservice.HostConfig{
