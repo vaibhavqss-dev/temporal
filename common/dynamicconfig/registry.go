@@ -38,16 +38,13 @@ func queryRegistry(k Key) GenericSetting {
 	return globalRegistry.settings[strings.ToLower(k.String())]
 }
 
-func GetDefaultValueForKey(k Key) ConstrainedValue {
-	s := queryRegistry(k)
-	return ConstrainedValue{
-		Constraints: Constraints{},
-		Value:       s.DefaultValue(),
-	}
-}
-
 // For testing only; do not call from regular code!
 func ResetRegistryForTest() {
 	globalRegistry.settings = nil
 	globalRegistry.queried.Store(false)
+}
+
+func GetDefaultValues(k Key) []ConstrainedValue {
+	s := queryRegistry(k)
+	return s.DefaultValue()
 }

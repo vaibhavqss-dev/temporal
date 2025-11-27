@@ -118,7 +118,7 @@ func (x *Constraints) GetDestination() string {
 type ConstrainedValue struct {
 	state         protoimpl.MessageState `protogen:"open.v1"`
 	Constraints   *Constraints           `protobuf:"bytes,1,opt,name=constraints,proto3" json:"constraints,omitempty"`
-	Value         *structpb.Struct       `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
+	Value         *structpb.Value        `protobuf:"bytes,2,opt,name=value,proto3" json:"value,omitempty"`
 	unknownFields protoimpl.UnknownFields
 	sizeCache     protoimpl.SizeCache
 }
@@ -160,7 +160,7 @@ func (x *ConstrainedValue) GetConstraints() *Constraints {
 	return nil
 }
 
-func (x *ConstrainedValue) GetValue() *structpb.Struct {
+func (x *ConstrainedValue) GetValue() *structpb.Value {
 	if x != nil {
 		return x.Value
 	}
@@ -223,10 +223,10 @@ const file_temporal_server_api_dynamicconfig_v1_message_proto_rawDesc = "" +
 	"\x0ftask_queue_type\x18\x04 \x01(\x05R\rtaskQueueType\x12\x19\n" +
 	"\bshard_id\x18\x05 \x01(\x05R\ashardId\x12\x1b\n" +
 	"\ttask_type\x18\x06 \x01(\x05R\btaskType\x12 \n" +
-	"\vdestination\x18\a \x01(\tR\vdestination\"\x96\x01\n" +
+	"\vdestination\x18\a \x01(\tR\vdestination\"\x95\x01\n" +
 	"\x10ConstrainedValue\x12S\n" +
-	"\vconstraints\x18\x01 \x01(\v21.temporal.server.api.dynamicconfig.v1.ConstraintsR\vconstraints\x12-\n" +
-	"\x05value\x18\x02 \x01(\v2\x17.google.protobuf.StructR\x05value\"a\n" +
+	"\vconstraints\x18\x01 \x01(\v21.temporal.server.api.dynamicconfig.v1.ConstraintsR\vconstraints\x12,\n" +
+	"\x05value\x18\x02 \x01(\v2\x16.google.protobuf.ValueR\x05value\"a\n" +
 	"\x11ConstrainedValues\x12L\n" +
 	"\x05items\x18\x01 \x03(\v26.temporal.server.api.dynamicconfig.v1.ConstrainedValueR\x05itemsB:Z8go.temporal.io/server/api/dynamicconfig/v1;dynamicconfigb\x06proto3"
 
@@ -247,11 +247,11 @@ var file_temporal_server_api_dynamicconfig_v1_message_proto_goTypes = []any{
 	(*Constraints)(nil),       // 0: temporal.server.api.dynamicconfig.v1.Constraints
 	(*ConstrainedValue)(nil),  // 1: temporal.server.api.dynamicconfig.v1.ConstrainedValue
 	(*ConstrainedValues)(nil), // 2: temporal.server.api.dynamicconfig.v1.ConstrainedValues
-	(*structpb.Struct)(nil),   // 3: google.protobuf.Struct
+	(*structpb.Value)(nil),    // 3: google.protobuf.Value
 }
 var file_temporal_server_api_dynamicconfig_v1_message_proto_depIdxs = []int32{
 	0, // 0: temporal.server.api.dynamicconfig.v1.ConstrainedValue.constraints:type_name -> temporal.server.api.dynamicconfig.v1.Constraints
-	3, // 1: temporal.server.api.dynamicconfig.v1.ConstrainedValue.value:type_name -> google.protobuf.Struct
+	3, // 1: temporal.server.api.dynamicconfig.v1.ConstrainedValue.value:type_name -> google.protobuf.Value
 	1, // 2: temporal.server.api.dynamicconfig.v1.ConstrainedValues.items:type_name -> temporal.server.api.dynamicconfig.v1.ConstrainedValue
 	3, // [3:3] is the sub-list for method output_type
 	3, // [3:3] is the sub-list for method input_type

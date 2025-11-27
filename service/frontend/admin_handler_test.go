@@ -2091,7 +2091,6 @@ func (s *adminHandlerSuite) TestImportWorkflowExecution_WithNonAliasedSearchAttr
 }
 
 func (s *adminHandlerSuite) TestGetDynamicConfigurations() {
-
 	s.mockResource.HostInfoProvider.EXPECT().HostInfo().Return(membership.NewHostInfoFromAddress("test-dynamic-config-host")).Times(1)
 	res, err := s.handler.GetDynamicConfigurations(context.Background(), &adminservice.GetDynamicConfigurationsRequest{
 		DynamicConfigKeys: []string{
@@ -2110,24 +2109,24 @@ func (s *adminHandlerSuite) TestGetDynamicConfigurations() {
 
 	hostConfig := res.HostConfig[0]
 	s.NotNil(hostConfig.DynamicConfig)
-	s.Len(hostConfig.DynamicConfig, 3)
+	s.Len(hostConfig.DynamicConfig, 5)
 
 	rpsConfig := hostConfig.DynamicConfig["frontend.rps"]
 	s.NotNil(rpsConfig)
 	s.Len(rpsConfig.Items, 1)
 	s.NotNil(rpsConfig.Items[0].Constraints)
-	s.Equal(float64(10), rpsConfig.Items[0].Value.AsMap()["value"])
+	s.Equal(float64(10), rpsConfig.Items[0].Value.AsInterface())
 
 	maxIDLengthConfig := hostConfig.DynamicConfig["limit.maxIDLength"]
 	s.NotNil(maxIDLengthConfig)
 	s.Len(maxIDLengthConfig.Items, 1)
-	s.Equal(float64(255), maxIDLengthConfig.Items[0].Value.AsMap()["value"])
+	s.Equal(float64(255), maxIDLengthConfig.Items[0].Value.AsInterface())
 
 	transitionHistoryConfig := hostConfig.DynamicConfig["history.enableTransitionHistory"]
 	s.NotNil(transitionHistoryConfig)
 	s.Len(transitionHistoryConfig.Items, 1)
 	s.NotNil(transitionHistoryConfig.Items[0].Constraints)
-	s.Equal(true, transitionHistoryConfig.Items[0].Value.AsMap()["value"])
+	s.Equal(true, transitionHistoryConfig.Items[0].Value.AsInterface())
 
 	s.NotEmpty(hostConfig.Hostname)
 }

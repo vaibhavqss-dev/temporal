@@ -17,7 +17,7 @@ message Constraints {
 
 message ConstrainedValue {
   Constraints constraints = 1;
-  google.protobuf.Struct value = 2;
+  google.protobuf.Value value = 2;
 }
 
 message ConstrainedValues {

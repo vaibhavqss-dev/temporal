@@ -24,7 +24,7 @@ import (
 	"go.temporal.io/server/api/adminservice/v1"
 	clusterspb "go.temporal.io/server/api/cluster/v1"
 	commonspb "go.temporal.io/server/api/common/v1"
-	dc "go.temporal.io/server/api/dynamicconfig/v1"
+	dynamicconfigspb "go.temporal.io/server/api/dynamicconfig/v1"
 	enumsspb "go.temporal.io/server/api/enums/v1"
 	"go.temporal.io/server/api/historyservice/v1"
 	"go.temporal.io/server/api/matchingservice/v1"
@@ -2187,7 +2187,7 @@ func (adh *AdminHandler) GetDynamicConfigurations(
 	req *adminservice.GetDynamicConfigurationsRequest,
 ) (*adminservice.GetDynamicConfigurationsResponse, error) {
 	requestedKeys := req.GetDynamicConfigKeys()
-	dynamicConfig := make(map[string]*dc.ConstrainedValues, len(requestedKeys))
+	dynamicConfig := make(map[string]*dynamicconfigspb.ConstrainedValues, len(requestedKeys))
 
 	for _, key := range requestedKeys {
 		var dcEntry []dynamicconfig.ConstrainedValue
@@ -2196,27 +2196,30 @@ func (adh *AdminHandler) GetDynamicConfigurations(
 
 		// get global default value
 		if dcEntry == nil {
-			defaultValue := dynamicconfig.GetDefaultValueForKey(k)
-			dcEntry = append(dcEntry, defaultValue)
+			dcEntry = dynamicconfig.GetDefaultValues(k)
 		}
 
-		protoValues := make([]*dc.ConstrainedValue, 0)
-		for _, ConstrainedValue := range dcEntry {
-			value, _ := toStruct(ConstrainedValue.Value)
-			protoValues = append(protoValues, &dc.ConstrainedValue{
-				Value: value,
-				Constraints: &dc.Constraints{
-					Namespace:     ConstrainedValue.Constraints.Namespace,
-					NamespaceId:   ConstrainedValue.Constraints.NamespaceID,
-					TaskQueueName: ConstrainedValue.Constraints.TaskQueueName,
-					TaskQueueType: int32(ConstrainedValue.Constraints.TaskQueueType),
-					ShardId:       ConstrainedValue.Constraints.ShardID,
-					TaskType:      int32(ConstrainedValue.Constraints.TaskType),
-					Destination:   ConstrainedValue.Constraints.Destination,
+		protoValues := make([]*dynamicconfigspb.ConstrainedValue, 0, len(dcEntry))
+		for _, cv := range dcEntry {
+			s, err := structpb.NewValue(normalizeValue(cv.Value))
+			if err != nil {
+				adh.logger.Error("Failed to convert dynamic config value to structpb.Value", tag.Error(err), tag.Key(key))
+				continue
+			}
+			protoValues = append(protoValues, &dynamicconfigspb.ConstrainedValue{
+				Value: s,
+				Constraints: &dynamicconfigspb.Constraints{
+					Namespace:     cv.Constraints.Namespace,
+					NamespaceId:   cv.Constraints.NamespaceID,
+					TaskQueueName: cv.Constraints.TaskQueueName,
+					TaskQueueType: int32(cv.Constraints.TaskQueueType),
+					ShardId:       cv.Constraints.ShardID,
+					TaskType:      int32(cv.Constraints.TaskType),
+					Destination:   cv.Constraints.Destination,
 				},
 			})
 		}
-		dynamicConfig[key] = &dc.ConstrainedValues{Items: protoValues}
+		dynamicConfig[key] = &dynamicconfigspb.ConstrainedValues{Items: protoValues}
 	}
 
 	hostConfig := &adminservice.HostConfig{
@@ -2229,16 +2232,13 @@ func (adh *AdminHandler) GetDynamicConfigurations(
 	}, nil
 }
 
-func toStruct(v any) (*structpb.Struct, error) {
-	val, err := structpb.NewValue(v)
-	if err != nil {
-		return nil, fmt.Errorf("failed to convert value: %w", err)
+func normalizeValue(v interface{}) interface{} {
+	switch val := v.(type) {
+	case time.Duration:
+		return val.String()
+	default:
+		return val
 	}
-	return &structpb.Struct{
-		Fields: map[string]*structpb.Value{
-			"value": val,
-		},
-	}, nil
 }
 
 func validateHistoryDLQKey(

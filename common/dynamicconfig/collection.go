@@ -114,7 +114,7 @@ func NewCollection(client Client, logger log.Logger) *Collection {
 		subscriptions: make(map[Key]map[int]any),
 	}
 }
-
+	
 func (c *Collection) Start() {
 	s := DynamicConfigSubscriptionCallback.Get(c)()
 	c.subscriptionLock.Lock()
@@ -159,10 +159,6 @@ func (c *Collection) GetPingChecks() []pingable.Check {
 			},
 		},
 	}
-}
-
-func (c *Collection) GetClient() Client {
-	return c.client
 }
 
 func (c *Collection) pollForChanges(ctx context.Context) error {

@@ -18,7 +18,7 @@ type (
 		def         T                    // default value
 		convert     func(any) (T, error) // converter function
 		description string               // documentation
-	}
+	}	
 
 	constrainedDefaultSetting[T any, P any] struct {
 		key         Key                        // string value of key. case-insensitive.
@@ -34,8 +34,8 @@ type (
 		Key() Key
 		Precedence() Precedence
 		Validate(v any) error
-		DefaultValue() any
-
+		DefaultValue() []ConstrainedValue
+		
 		// for internal use:
 		dispatchUpdate(*Collection, any, []ConstrainedValue)
 	}
